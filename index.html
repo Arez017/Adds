@@ -409,6 +409,22 @@
   .upload-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
   .upload-note{margin-top:14px;font-size:0.76rem;color:var(--ink-dim);font-family:var(--font-mono);line-height:1.5;}
 
+  /* ---------- CHECKBOX PERSONALIZADO (consistente en Android/iOS/desktop) ---------- */
+  input[type="checkbox"]{
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    width:20px !important;height:20px;min-width:20px;flex-shrink:0;
+    background:var(--bg-panel-2);border:2px solid var(--line-bright);
+    cursor:pointer;position:relative;margin:0;
+  }
+  input[type="checkbox"]:checked{
+    background:var(--acid);border-color:var(--acid);
+  }
+  input[type="checkbox"]:checked::after{
+    content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid #08060F;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+  input[type="checkbox"]:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+
   @media (max-width:860px){
     .hero{grid-template-columns:1fr;padding-top:50px;}
     nav ul{display:none;}
