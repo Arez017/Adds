@@ -997,14 +997,20 @@
     }
   }
 
+  let catalogoCargado = false;
+
   sb.auth.onAuthStateChange(function(event, session){
     currentUser = session ? session.user : null;
     actualizarNavAuth();
+    if (catalogoCargado){
+      recargarCatalogoCompartido();
+    }
   });
   sb.auth.getSession().then(function({ data }){
     currentUser = data.session ? data.session.user : null;
     actualizarNavAuth();
     cargarCatalogoCompartido();
+    catalogoCargado = true;
   });
 
   function limpiarNombreArchivo(nombre){
@@ -1290,7 +1296,7 @@
   });
 
   function cargarCatalogoCompartido(){
-    sb.from('videos').select('*').order('created_at', { ascending: false })
+    return sb.from('videos').select('*').order('created_at', { ascending: false })
       .then(function({ data, error }){
         if (error) { console.error('No se pudo cargar el catálogo compartido:', error); return; }
         data.forEach(function(v){
@@ -1299,6 +1305,13 @@
           crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short);
         });
       });
+  }
+
+  function recargarCatalogoCompartido(){
+    // Quita solo las tarjetas subidas por usuarios (las 6 de muestra se quedan, no tienen data-db-id)
+    document.querySelectorAll('#grid .card[data-db-id]').forEach(function(c){ c.remove(); });
+    catalogCount = 6;
+    cargarCatalogoCompartido().then(function(){ aplicarFiltros(); });
   }
 
   function cargarTopPopulares(){
