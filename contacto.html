@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contacto — Bolíx</title>
+<style>
+  :root{
+    --bg:#08060F; --bg-panel:#150F24; --ink:#EDE7F7; --ink-dim:rgba(237,231,247,0.7);
+    --violet:#9B5CFF; --magenta:#FF3EC9; --cyan:#34F5D4; --acid:#D6FF3E; --line:rgba(237,231,247,0.14);
+    --font-display:'Fraunces',Georgia,serif; --font-body:'IBM Plex Sans',-apple-system,sans-serif; --font-mono:'IBM Plex Mono',monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.7;}
+  a{color:var(--cyan);}
+  header{padding:24px 6%;border-bottom:2px solid var(--violet);display:flex;justify-content:space-between;align-items:center;}
+  .brand{font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-shadow:2px 0 var(--magenta),-2px 0 var(--cyan);}
+  .back{font-family:var(--font-mono);font-size:0.8rem;color:var(--acid);}
+  main{max-width:600px;margin:0 auto;padding:80px 6% 100px;text-align:center;}
+  h1{font-family:var(--font-display);font-size:2.2rem;margin-bottom:18px;}
+  p{color:var(--ink-dim);font-size:1rem;margin-bottom:28px;}
+  .contact-box{
+    background:var(--bg-panel);border:2px solid var(--violet);padding:34px;
+    box-shadow:6px 6px 0 rgba(255,62,201,0.3);
+  }
+  .contact-box a{
+    display:inline-block;margin-top:8px;font-family:var(--font-mono);font-size:1.05rem;
+    color:var(--acid);border-bottom:1px solid var(--acid);padding-bottom:2px;
+  }
+  footer{padding:30px 6%;border-top:1px solid var(--line);text-align:center;font-size:0.8rem;color:var(--ink-dim);}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Bolíx</div>
+  <a class="back" href="index.html">← Volver</a>
+</header>
+<main>
+  <h1>Contacto</h1>
+  <p>¿Preguntas, reportes de contenido, o quieres pedir que se elimine un video que subiste? Escríbenos:</p>
+  <div class="contact-box">
+    <!-- 👉 Reemplaza con tu correo real -->
+    <a href="mailto:tucorreo@ejemplo.com">tucorreo@ejemplo.com</a>
+  </div>
+</main>
+<footer>Bolíx © 2026 — Sube, mira, comparte.</footer>
+</body>
+</html>
