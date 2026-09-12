@@ -1448,28 +1448,66 @@
         }
         vacio.style.display = 'none';
         lista.innerHTML = '';
+        const ahora = new Date();
         data.forEach(function(u){
+          const hastaFecha = u.baneado_hasta ? new Date(u.baneado_hasta) : null;
+          const estaBaneado = hastaFecha && hastaFecha > ahora;
+          const esPermanente = hastaFecha && hastaFecha.getFullYear() > 2900;
+          let estadoTxt = '';
+          if (estaBaneado){
+            estadoTxt = esPermanente
+              ? '🚫 BANEADO (permanente)'
+              : '🚫 BANEADO hasta ' + hastaFecha.toLocaleDateString();
+          }
+
           const item = document.createElement('div');
           item.className = 'comment-item';
           item.innerHTML = `
             <div class="comment-body">
-              <span class="comment-author">${u.username || '(sin nombre)'} ${u.baneado ? '🚫 BANEADO' : ''}</span>
+              <span class="comment-author">${u.username || '(sin nombre)'} ${estadoTxt}</span>
               <span class="comment-text">${u.bio || ''}</span>
             </div>
-            <button class="${u.baneado ? 'edit-btn' : 'delete-btn'}" onclick="toggleBanUsuario('${u.user_id}', ${!u.baneado}, this)">
-              ${u.baneado ? 'Desbanear' : 'Banear'}
-            </button>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              ${estaBaneado
+                ? `<button class="edit-btn" onclick="toggleBanUsuario('${u.user_id}', null)">Desbanear</button>`
+                : `
+                  <select id="banDuracion_${u.user_id}" style="background:var(--bg-panel-2);border:1px solid var(--line);color:var(--ink);padding:6px 8px;font-size:0.78rem;">
+                    <option value="1">1 día</option>
+                    <option value="3">3 días</option>
+                    <option value="7">7 días</option>
+                    <option value="30">30 días</option>
+                    <option value="permanente">Permanente</option>
+                  </select>
+                  <button class="delete-btn" onclick="banearConDuracion('${u.user_id}')">Banear</button>
+                `
+              }
+            </div>
           `;
           lista.appendChild(item);
         });
       });
   }
 
-  function toggleBanUsuario(userId, nuevoValor, btnEl){
-    if (nuevoValor && !confirm('¿Banear a este usuario? No podrá subir videos ni comentar.')) return;
-    sb.rpc('admin_banear_usuario', { target_user: userId, valor: nuevoValor }).then(function({ error }){
+  function banearConDuracion(userId){
+    const select = document.getElementById('banDuracion_' + userId);
+    const valor = select.value;
+    let hasta;
+    if (valor === 'permanente'){
+      hasta = new Date('2999-12-31').toISOString();
+    } else {
+      const dias = parseInt(valor, 10);
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() + dias);
+      hasta = fecha.toISOString();
+    }
+    if (!confirm('¿Banear a este usuario ' + (valor === 'permanente' ? 'de forma permanente' : 'por ' + valor + ' día(s)') + '?')) return;
+    toggleBanUsuario(userId, hasta);
+  }
+
+  function toggleBanUsuario(userId, hasta){
+    sb.rpc('admin_banear_usuario', { target_user: userId, hasta: hasta }).then(function({ error }){
       if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
-      mostrarToast(nuevoValor ? 'Usuario baneado.' : 'Usuario desbaneado.');
+      mostrarToast(hasta ? 'Usuario baneado.' : 'Usuario desbaneado.');
       cargarUsuariosAdmin();
     });
   }
