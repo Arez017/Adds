@@ -393,6 +393,8 @@
     display:none;align-items:center;justify-content:center;z-index:300;padding:5%;
   }
   .video-modal.open{display:flex;}
+  #videoModal{z-index:350;}
+  #reportModal{z-index:360;}
   .video-modal-inner{
     width:100%;max-width:860px;background:var(--bg-panel);border:2px solid var(--violet);
     box-shadow:10px 10px 0 rgba(255,62,201,0.35);position:relative;
@@ -1370,7 +1372,9 @@
     if (videoActualId){
       acciones.style.display = 'flex';
       comentariosSection.style.display = 'block';
-      sb.rpc('increment_vistas', { video_id: dbId });
+      sb.rpc('increment_vistas', { video_id: dbId }).then(function({ error }){
+        if (error) console.error('No se pudo sumar la vista:', error);
+      });
       cargarComentarios(videoActualId);
     } else {
       // Los 6 videos de muestra no están en la base, no tienen comentarios/reportes reales
