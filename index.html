@@ -161,6 +161,27 @@
   }
   .top-empty{font-family:var(--font-mono);font-size:0.85rem;color:var(--ink-dim);padding:20px 0 40px;}
 
+  /* ---------- MI PERFIL ---------- */
+  .profile-cover{
+    height:150px;background:linear-gradient(120deg,rgba(155,92,255,0.35),rgba(255,62,201,0.25));
+    background-size:cover;background-position:center;border-bottom:2px solid var(--violet);
+  }
+  .profile-header{display:flex;align-items:flex-end;gap:18px;margin:-38px 0 24px;padding:0 4px;}
+  .profile-avatar{
+    width:76px;height:76px;border-radius:50%;background:var(--violet);color:#08060F;
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+    font-size:1.8rem;font-weight:700;flex-shrink:0;box-shadow:0 0 20px rgba(155,92,255,0.5);
+    text-transform:uppercase;border:3px solid var(--bg-panel);background-size:cover;background-position:center;
+  }
+  .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:10px;}
+  .stat-box{
+    background:var(--bg-panel-2);border:1px solid var(--line);padding:16px;text-align:center;
+  }
+  .stat-num{display:block;font-family:var(--font-display);font-size:1.7rem;font-weight:700;color:var(--acid);}
+  .stat-label{font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;}
+  #profileGrid.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;}
+  @media (max-width:640px){ .profile-header{flex-wrap:wrap;} .profile-header .edit-btn{margin-left:auto;} }
+
   /* ---------- SHORTS ---------- */
   .shorts-section{padding:60px 6% 0;}
   .shorts-section h2{font-family:var(--font-display);font-size:2.1rem;font-weight:700;margin-bottom:26px;
@@ -826,6 +847,73 @@
   </div>
 </div>
 
+<div class="video-modal" id="profileModal">
+  <div class="video-modal-inner" style="max-width:900px;">
+    <div class="video-modal-head">
+      <span>MI PERFIL</span>
+      <button class="video-modal-close" onclick="closeProfile()">✕</button>
+    </div>
+    <div class="profile-cover" id="profileCover"></div>
+    <div style="padding:0 28px 30px;">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div style="flex:1;">
+          <h3 id="profileName" style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;"></h3>
+          <span id="profileEmail" style="font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-dim);"></span>
+          <p id="profileBio" style="margin-top:6px;font-size:0.88rem;color:var(--ink-dim);"></p>
+        </div>
+        <button class="edit-btn" onclick="abrirEdicionPerfil()">Editar perfil</button>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-box"><span class="stat-num" id="statVideos">0</span><span class="stat-label">Videos</span></div>
+        <div class="stat-box"><span class="stat-num" id="statVistas">0</span><span class="stat-label">Vistas totales</span></div>
+        <div class="stat-box"><span class="stat-num" id="statShorts">0</span><span class="stat-label">Shorts</span></div>
+      </div>
+      <h4 style="font-family:var(--font-display);font-size:1.2rem;margin:28px 0 16px;">Mis videos</h4>
+      <div class="grid" id="profileGrid"></div>
+      <p class="top-empty" id="profileEmpty" style="display:none;">Todavía no has subido ningún video.</p>
+    </div>
+  </div>
+</div>
+
+<div class="video-modal" id="editProfileModal">
+  <div class="upload-modal-inner">
+    <div class="video-modal-head">
+      <span>EDITAR PERFIL</span>
+      <button class="video-modal-close" onclick="closeEditProfile()">✕</button>
+    </div>
+    <form class="upload-form" id="editProfileForm">
+      <h3>Editar perfil</h3>
+      <span class="sub">Foto, portada y bio</span>
+
+      <div class="field">
+        <label>Nombre de usuario</label>
+        <input type="text" id="pUsername" required>
+      </div>
+
+      <div class="field">
+        <label>Bio corta</label>
+        <textarea id="pBio" placeholder="Contale a la gente algo sobre ti..." maxlength="160"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Foto de perfil</label>
+        <div class="file-drop" id="pAvatarDropLabel" onclick="document.getElementById('pAvatar').click()">Haz clic para elegir una foto</div>
+        <input type="file" id="pAvatar" accept="image/*">
+      </div>
+
+      <div class="field">
+        <label>Portada</label>
+        <div class="file-drop" id="pCoverDropLabel" onclick="document.getElementById('pCover').click()">Haz clic para elegir una portada</div>
+        <input type="file" id="pCover" accept="image/*">
+      </div>
+
+      <button type="submit" class="upload-submit">Guardar perfil</button>
+      <p class="upload-note">Si no eliges una foto/portada nueva, se conserva la actual.</p>
+    </form>
+  </div>
+</div>
+
 <div class="video-modal" id="editModal">
   <div class="upload-modal-inner">
     <div class="video-modal-head">
@@ -974,6 +1062,8 @@
 
   function cerrarSesion(){
     sb.auth.signOut();
+    closeProfile();
+    closeEditProfile();
   }
 
   function actualizarNavAuth(){
@@ -982,9 +1072,14 @@
     if (banner) banner.style.display = currentUser ? 'none' : 'flex';
     if (currentUser){
       const nombre = (currentUser.user_metadata && currentUser.user_metadata.username) || currentUser.email;
+      const avatarUrl = currentUser.user_metadata && currentUser.user_metadata.avatar_url;
+      const avatarHtml = avatarUrl
+        ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">`
+        : '';
       nav.innerHTML = `
         <div class="user-badge">
-          <span class="email">${nombre}</span>
+          ${avatarHtml}
+          <span class="email" style="cursor:pointer;text-decoration:underline;" onclick="abrirPerfil()">${nombre}</span>
           <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
           <button class="nav-cta" onclick="openUpload()">Subir video</button>
         </div>
@@ -1129,7 +1224,7 @@
   ];
   const videosPorId = {}; // guarda los datos de cada video subido, para poder editarlos sin volver a consultar
 
-  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort){
+  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId){
     const svg = catalogSvgs[catalogCount % catalogSvgs.length];
     const thumbContent = coverURL
       ? `<img class="cover-img" src="${coverURL}" alt="">`
@@ -1160,14 +1255,14 @@
         <div class="card-meta"><span class="tag">${categoria}</span>${botones || autorTxt}</div>
       </div>
     `;
-    document.getElementById('grid').prepend(card);
+    document.getElementById(targetId || 'grid').prepend(card);
   }
 
   function borrarVideo(dbId, btnEl){
     if (!confirm('¿Borrar este video? No se puede deshacer.')) return;
     sb.from('videos').delete().eq('id', dbId).then(function({ error }){
       if (error){ alert('No se pudo borrar: ' + error.message); return; }
-      btnEl.closest('.card').remove();
+      document.querySelectorAll('.card[data-db-id="' + dbId + '"]').forEach(function(c){ c.remove(); });
       delete videosPorId[dbId];
     });
   }
@@ -1264,8 +1359,8 @@
           titulo: nuevoTitulo, categoria: nuevaCategoria, descripcion: nuevaDesc,
           video_url: resultado.videoURLFinal, cover_url: resultado.coverURLFinal, es_short: nuevoEsShort
         };
-        const card = document.querySelector('.card[data-db-id="' + dbId + '"]');
-        if (card){
+        const tarjetas = document.querySelectorAll('.card[data-db-id="' + dbId + '"]');
+        tarjetas.forEach(function(card){
           card.dataset.categoria = nuevaCategoria;
           card.querySelector('h3').textContent = nuevoTitulo;
           card.querySelector('.card-body p').textContent = nuevaDesc;
@@ -1282,7 +1377,7 @@
             }
             img.src = resultado.coverURLFinal;
           }
-        }
+        });
         closeEdit();
       })
       .catch(function(err){
@@ -1347,6 +1442,152 @@
       });
   }
   cargarTopPopulares();
+
+  function closeProfile(){
+    document.getElementById('profileModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('profileModal').addEventListener('click', function(e){
+    if(e.target === this) closeProfile();
+  });
+
+  function pintarAvatarYPortada(){
+    const meta = currentUser.user_metadata || {};
+    const nombre = meta.username || currentUser.email;
+    const avatarEl = document.getElementById('profileAvatar');
+    if (meta.avatar_url){
+      avatarEl.style.backgroundImage = `url('${meta.avatar_url}')`;
+      avatarEl.textContent = '';
+    } else {
+      avatarEl.style.backgroundImage = 'none';
+      avatarEl.textContent = nombre.charAt(0);
+    }
+    document.getElementById('profileCover').style.backgroundImage = meta.portada_url ? `url('${meta.portada_url}')` : 'none';
+    document.getElementById('profileBio').textContent = meta.bio || '';
+  }
+
+  function abrirPerfil(){
+    if (!currentUser) return;
+    const nombre = (currentUser.user_metadata && currentUser.user_metadata.username) || currentUser.email;
+    document.getElementById('profileName').textContent = nombre;
+    document.getElementById('profileEmail').textContent = currentUser.email;
+    pintarAvatarYPortada();
+    document.getElementById('profileGrid').innerHTML = '';
+    document.getElementById('profileEmpty').style.display = 'none';
+
+    document.getElementById('profileModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('videos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
+      .then(function({ data, error }){
+        if (error){ console.error('No se pudo cargar tu perfil:', error); return; }
+        const totalVistas = data.reduce(function(sum, v){ return sum + (v.vistas || 0); }, 0);
+        const totalShorts = data.filter(function(v){ return v.es_short; }).length;
+        document.getElementById('statVideos').textContent = data.length;
+        document.getElementById('statVistas').textContent = totalVistas;
+        document.getElementById('statShorts').textContent = totalShorts;
+
+        if (data.length === 0){
+          document.getElementById('profileEmpty').style.display = 'block';
+          return;
+        }
+        data.forEach(function(v){
+          catalogCount++;
+          const id = 'BLX-' + String(catalogCount).padStart(3,'0');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid');
+        });
+      });
+  }
+
+  function abrirEdicionPerfil(){
+    const meta = currentUser.user_metadata || {};
+    document.getElementById('pUsername').value = meta.username || '';
+    document.getElementById('pBio').value = meta.bio || '';
+    document.getElementById('pAvatar').value = '';
+    document.getElementById('pCover').value = '';
+    document.getElementById('pAvatarDropLabel').textContent = 'Haz clic para elegir una foto';
+    document.getElementById('pAvatarDropLabel').classList.remove('has-file');
+    document.getElementById('pCoverDropLabel').textContent = 'Haz clic para elegir una portada';
+    document.getElementById('pCoverDropLabel').classList.remove('has-file');
+    document.getElementById('editProfileModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEditProfile(){
+    document.getElementById('editProfileModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('editProfileModal').addEventListener('click', function(e){
+    if(e.target === this) closeEditProfile();
+  });
+  document.getElementById('pAvatar').addEventListener('change', function(){
+    if (this.files && this.files[0]){
+      document.getElementById('pAvatarDropLabel').textContent = '✓ ' + this.files[0].name;
+      document.getElementById('pAvatarDropLabel').classList.add('has-file');
+    }
+  });
+  document.getElementById('pCover').addEventListener('change', function(){
+    if (this.files && this.files[0]){
+      document.getElementById('pCoverDropLabel').textContent = '✓ ' + this.files[0].name;
+      document.getElementById('pCoverDropLabel').classList.add('has-file');
+    }
+  });
+
+  document.getElementById('editProfileForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const nuevoUsername = document.getElementById('pUsername').value.trim();
+    const nuevaBio = document.getElementById('pBio').value.trim();
+    const avatarFile = document.getElementById('pAvatar').files[0] || null;
+    const coverFile = document.getElementById('pCover').files[0] || null;
+    const marca = Date.now();
+    const metaActual = currentUser.user_metadata || {};
+
+    const submitBtn = this.querySelector('.upload-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando…';
+
+    Promise.resolve(metaActual.avatar_url || null)
+      .then(function(avatarActual){
+        if (!avatarFile) return avatarActual;
+        const ruta = currentUser.id + '/avatar_' + marca + '_' + limpiarNombreArchivo(avatarFile.name);
+        return sb.storage.from('perfiles').upload(ruta, avatarFile).then(function({ error }){
+          if (error) throw error;
+          return sb.storage.from('perfiles').getPublicUrl(ruta).data.publicUrl;
+        });
+      })
+      .then(function(avatarFinal){
+        if (!coverFile) return { avatarFinal, coverFinal: metaActual.portada_url || null };
+        const ruta = currentUser.id + '/portada_' + marca + '_' + limpiarNombreArchivo(coverFile.name);
+        return sb.storage.from('perfiles').upload(ruta, coverFile).then(function({ error }){
+          if (error) throw error;
+          return { avatarFinal, coverFinal: sb.storage.from('perfiles').getPublicUrl(ruta).data.publicUrl };
+        });
+      })
+      .then(function(resultado){
+        const nuevaMeta = Object.assign({}, metaActual, {
+          username: nuevoUsername,
+          bio: nuevaBio,
+          avatar_url: resultado.avatarFinal,
+          portada_url: resultado.coverFinal
+        });
+        return sb.auth.updateUser({ data: nuevaMeta });
+      })
+      .then(function({ data, error }){
+        if (error) throw error;
+        currentUser = data.user;
+        actualizarNavAuth();
+        document.getElementById('profileName').textContent = nuevoUsername;
+        pintarAvatarYPortada();
+        closeEditProfile();
+      })
+      .catch(function(err){
+        console.error(err);
+        alert('No se pudo guardar el perfil: ' + err.message);
+      })
+      .finally(function(){
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Guardar perfil';
+      });
+  });
 
   function cargarShorts(){
     sb.from('videos').select('*').eq('es_short', true).order('created_at', { ascending: false }).limit(12)
@@ -1461,7 +1702,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); }
   });
 </script>
 
