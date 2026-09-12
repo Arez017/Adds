@@ -1001,9 +1001,29 @@
       <button class="video-modal-close" onclick="closeAdmin()">✕</button>
     </div>
     <div style="padding:24px 28px 30px;">
-      <h4 style="font-family:var(--font-display);font-size:1.2rem;margin-bottom:16px;">🚩 Reportes pendientes</h4>
-      <div id="reportesList"></div>
-      <p class="top-empty" id="reportesEmpty" style="display:none;">No hay reportes pendientes. 🎉</p>
+
+      <div class="profile-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+        <div class="stat-box"><span class="stat-num" id="adminStatUsuarios">0</span><span class="stat-label">Usuarios</span></div>
+        <div class="stat-box"><span class="stat-num" id="adminStatVideos">0</span><span class="stat-label">Videos</span></div>
+        <div class="stat-box"><span class="stat-num" id="adminStatVistas">0</span><span class="stat-label">Vistas</span></div>
+        <div class="stat-box"><span class="stat-num" id="adminStatLikes">0</span><span class="stat-label">Likes</span></div>
+      </div>
+
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tabReportes" onclick="cambiarTabAdmin('reportes')">🚩 Reportes</div>
+        <div class="auth-tab" id="tabUsuarios" onclick="cambiarTabAdmin('usuarios')">👥 Usuarios</div>
+      </div>
+
+      <div id="adminPanelReportes">
+        <div id="reportesList"></div>
+        <p class="top-empty" id="reportesEmpty" style="display:none;">No hay reportes pendientes. 🎉</p>
+      </div>
+
+      <div id="adminPanelUsuarios" style="display:none;">
+        <div id="usuariosList"></div>
+        <p class="top-empty" id="usuariosEmpty" style="display:none;">Todavía no hay usuarios con perfil creado.</p>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1097,6 +1117,7 @@
   const SUPABASE_URL = "https://txpexkgtolpynuezlxig.supabase.co";
   const SUPABASE_KEY = "sb_publishable_ZX11AzHKipKUwiuW9Q5G3Q_43AGgL9w";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const ADMIN_EMAIL = 'bolix1338@gmail.com';
 
   // 👉 Sube este número cada vez que cambies Términos o Privacidad de forma importante.
   // Eso hace que a TODOS les vuelva a salir el aviso, aunque ya lo hubieran aceptado antes.
@@ -1200,7 +1221,7 @@
       const avatarHtml = avatarUrl
         ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">`
         : '';
-      const adminBtn = currentUser.email === 'bolix1338@gmail.com'
+      const adminBtn = currentUser.email === ADMIN_EMAIL
         ? `<button class="logout-btn" style="border-color:var(--acid);color:var(--acid);" onclick="abrirAdmin()">🛡️ Admin</button>`
         : '';
       nav.innerHTML = `
@@ -1333,13 +1354,13 @@
         data.forEach(function(c){
           const item = document.createElement('div');
           item.className = 'comment-item';
-          const puedeBorrar = currentUser && currentUser.id === c.user_id;
+          const puedeBorrar = currentUser && (currentUser.id === c.user_id || currentUser.email === ADMIN_EMAIL);
           item.innerHTML = `
             <div class="comment-body">
               <span class="comment-author">${c.autor || 'Anónimo'}</span>
               <span class="comment-text">${c.texto}</span>
             </div>
-            ${puedeBorrar ? `<button class="delete-btn" onclick="borrarComentario('${c.id}', '${videoId}')">Borrar</button>` : ''}
+            ${puedeBorrar ? `<button class="delete-btn" onclick="borrarComentario('${c.id}', '${videoId}', ${currentUser.id !== c.user_id})">Borrar</button>` : ''}
           `;
           lista.appendChild(item);
         });
@@ -1362,9 +1383,12 @@
       });
   });
 
-  function borrarComentario(comentarioId, videoId){
+  function borrarComentario(comentarioId, videoId, esDelAdmin){
     if (!confirm('¿Borrar este comentario?')) return;
-    sb.from('comentarios').delete().eq('id', comentarioId).then(function({ error }){
+    const accion = esDelAdmin
+      ? sb.rpc('admin_borrar_comentario', { target_id: comentarioId })
+      : sb.from('comentarios').delete().eq('id', comentarioId);
+    accion.then(function({ error }){
       if (error){ mostrarToast('No se pudo borrar: ' + error.message, 'error'); return; }
       cargarComentarios(videoId);
     });
@@ -1380,10 +1404,83 @@
   });
 
   function abrirAdmin(){
-    if (!currentUser || currentUser.email !== 'bolix1338@gmail.com'){ mostrarToast('No tienes permiso para ver esto.', 'error'); return; }
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL){ mostrarToast('No tienes permiso para ver esto.', 'error'); return; }
     document.getElementById('adminModal').classList.add('open');
     document.body.style.overflow = 'hidden';
+    cambiarTabAdmin('reportes');
+    cargarEstadisticasAdmin();
     cargarReportes();
+  }
+
+  function cambiarTabAdmin(tab){
+    document.getElementById('tabReportes').classList.toggle('active', tab === 'reportes');
+    document.getElementById('tabUsuarios').classList.toggle('active', tab === 'usuarios');
+    document.getElementById('adminPanelReportes').style.display = tab === 'reportes' ? 'block' : 'none';
+    document.getElementById('adminPanelUsuarios').style.display = tab === 'usuarios' ? 'block' : 'none';
+    if (tab === 'usuarios') cargarUsuariosAdmin();
+  }
+
+  function cargarEstadisticasAdmin(){
+    sb.from('perfiles').select('*', { count: 'exact', head: true })
+      .then(function({ count }){ document.getElementById('adminStatUsuarios').textContent = count || 0; });
+    sb.from('videos').select('vistas')
+      .then(function({ data }){
+        document.getElementById('adminStatVideos').textContent = data ? data.length : 0;
+        const totalVistas = (data || []).reduce(function(s, v){ return s + (v.vistas || 0); }, 0);
+        document.getElementById('adminStatVistas').textContent = totalVistas;
+      });
+    sb.from('likes').select('*', { count: 'exact', head: true })
+      .then(function({ count }){ document.getElementById('adminStatLikes').textContent = count || 0; });
+  }
+
+  function cargarUsuariosAdmin(){
+    const lista = document.getElementById('usuariosList');
+    const vacio = document.getElementById('usuariosEmpty');
+    lista.innerHTML = '<p class="top-empty">Cargando...</p>';
+
+    sb.from('perfiles').select('*').order('updated_at', { ascending: false })
+      .then(function({ data, error }){
+        if (error){ lista.innerHTML = ''; mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        if (!data || data.length === 0){
+          lista.innerHTML = '';
+          vacio.style.display = 'block';
+          return;
+        }
+        vacio.style.display = 'none';
+        lista.innerHTML = '';
+        data.forEach(function(u){
+          const item = document.createElement('div');
+          item.className = 'comment-item';
+          item.innerHTML = `
+            <div class="comment-body">
+              <span class="comment-author">${u.username || '(sin nombre)'} ${u.baneado ? '🚫 BANEADO' : ''}</span>
+              <span class="comment-text">${u.bio || ''}</span>
+            </div>
+            <button class="${u.baneado ? 'edit-btn' : 'delete-btn'}" onclick="toggleBanUsuario('${u.user_id}', ${!u.baneado}, this)">
+              ${u.baneado ? 'Desbanear' : 'Banear'}
+            </button>
+          `;
+          lista.appendChild(item);
+        });
+      });
+  }
+
+  function toggleBanUsuario(userId, nuevoValor, btnEl){
+    if (nuevoValor && !confirm('¿Banear a este usuario? No podrá subir videos ni comentar.')) return;
+    sb.rpc('admin_banear_usuario', { target_user: userId, valor: nuevoValor }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      mostrarToast(nuevoValor ? 'Usuario baneado.' : 'Usuario desbaneado.');
+      cargarUsuariosAdmin();
+    });
+  }
+
+  function toggleDestacar(videoId, nuevoValor, btnEl){
+    sb.rpc('admin_destacar_video', { target_id: videoId, valor: nuevoValor }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      mostrarToast(nuevoValor ? 'Video destacado.' : 'Ya no está destacado.');
+      btnEl.textContent = nuevoValor ? '⭐ Quitar' : '☆ Destacar';
+      btnEl.setAttribute('onclick', `toggleDestacar('${videoId}', ${!nuevoValor}, this)`);
+    });
   }
 
   function cargarReportes(){
@@ -1627,7 +1724,7 @@
   ];
   const videosPorId = {}; // guarda los datos de cada video subido, para poder editarlos sin volver a consultar
 
-  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId){
+  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId, destacado){
     const svg = catalogSvgs[catalogCount % catalogSvgs.length];
     const thumbContent = coverURL
       ? `<img class="cover-img" src="${coverURL}" alt="">`
@@ -1639,6 +1736,9 @@
       videosPorId[dbId] = { titulo, categoria, descripcion: desc, video_url: videoURL, cover_url: coverURL, es_short: !!esShort };
       botones = `<button class="edit-btn" onclick="abrirEdicion('${dbId}')">Editar</button><button class="delete-btn" onclick="borrarVideo('${dbId}', this)">Borrar</button>`;
     }
+    if (currentUser && currentUser.email === ADMIN_EMAIL && dbId){
+      botones += `<button class="edit-btn" onclick="toggleDestacar('${dbId}', ${!destacado}, this)">${destacado ? '⭐ Quitar' : '☆ Destacar'}</button>`;
+    }
     const autorTxt = autor
       ? `<span style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();verPerfilPublico('${ownerId}')">Por ${autor}</span>`
       : '<span>0 vistas</span>';
@@ -1647,7 +1747,14 @@
     card.className = 'card';
     card.dataset.categoria = categoria;
     if (dbId) card.dataset.dbId = dbId;
-    card.innerHTML = `
+    if (destacado){
+      const badge = document.createElement('div');
+      badge.style.cssText = 'position:absolute;top:8px;left:8px;background:var(--acid);color:#08060F;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;padding:2px 8px;z-index:2;';
+      badge.textContent = '⭐ DESTACADO';
+      card.style.position = 'relative';
+      card.appendChild(badge);
+    }
+    card.innerHTML += `
       <div class="thumb ${coverURL ? 'has-cover' : ''}" onclick="openVideo('${videoURL}','${id} · ${titulo.replace(/'/g,"")}', ${dbId ? `'${dbId}'` : 'null'})">
         ${thumbContent}
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -1804,7 +1911,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'grid', v.destacado);
         });
       });
   }
@@ -1817,7 +1924,7 @@
   }
 
   function cargarTopPopulares(){
-    sb.from('videos').select('*').order('vistas', { ascending: false }).limit(5)
+    sb.from('videos').select('*').order('destacado', { ascending: false }).order('vistas', { ascending: false }).limit(5)
       .then(function({ data, error }){
         if (error){ console.error('No se pudo cargar el top:', error); return; }
         const grid = document.getElementById('topGrid');
@@ -1886,7 +1993,7 @@
           const v = f.videos;
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'favoritosGrid');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'favoritosGrid', v.destacado);
         });
       });
   }
@@ -1923,7 +2030,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid', v.destacado);
         });
       });
   }
@@ -1972,7 +2079,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'publicProfileGrid');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'publicProfileGrid', v.destacado);
         });
       });
   }
