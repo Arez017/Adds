@@ -1200,7 +1200,7 @@
       const avatarHtml = avatarUrl
         ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">`
         : '';
-      const adminBtn = currentUser.email === 'bolix@gmail.com'
+      const adminBtn = currentUser.email === 'bolix1338@gmail.com'
         ? `<button class="logout-btn" style="border-color:var(--acid);color:var(--acid);" onclick="abrirAdmin()">🛡️ Admin</button>`
         : '';
       nav.innerHTML = `
@@ -1380,7 +1380,7 @@
   });
 
   function abrirAdmin(){
-    if (!currentUser || currentUser.email !== 'bolix@gmail.com'){ mostrarToast('No tienes permiso para ver esto.', 'error'); return; }
+    if (!currentUser || currentUser.email !== 'bolix1338@gmail.com'){ mostrarToast('No tienes permiso para ver esto.', 'error'); return; }
     document.getElementById('adminModal').classList.add('open');
     document.body.style.overflow = 'hidden';
     cargarReportes();
