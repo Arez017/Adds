@@ -456,7 +456,9 @@
   @media (max-width:640px){ .toast-container{left:16px;right:16px;bottom:16px;max-width:none;} }
 
   /* ---------- ACCIONES DE VIDEO Y COMENTARIOS ---------- */
-  .video-actions{display:flex;gap:10px;padding:14px 20px 0;}
+  .video-actions{display:flex;gap:10px;padding:14px 20px 0;flex-wrap:wrap;}
+  .modal-author{padding:0 20px;font-family:var(--font-mono);font-size:0.8rem;color:var(--cyan);cursor:pointer;text-decoration:underline;}
+  .edit-btn.active{background:var(--cyan);color:#08060F;}
   .comments-section{padding:20px;}
   .comments-title{font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:14px;}
   .comment-form{display:flex;gap:10px;margin-bottom:18px;}
@@ -765,7 +767,10 @@
     </div>
     <video id="modalVideo" controls></video>
     <div class="video-modal-title" id="modalTitle"></div>
+    <div id="modalAuthor" class="modal-author"></div>
     <div class="video-actions">
+      <button class="edit-btn" id="likeBtn" onclick="toggleLike()">🤍 <span id="likeCount">0</span></button>
+      <button class="edit-btn" id="favBtn" onclick="toggleFavorito()">🔖 Guardar</button>
       <button class="edit-btn" onclick="compartirVideo()">🔗 Compartir</button>
       <button class="delete-btn" onclick="abrirReporte()">🚩 Reportar</button>
     </div>
@@ -943,6 +948,10 @@
       <h4 style="font-family:var(--font-display);font-size:1.2rem;margin:28px 0 16px;">Mis videos</h4>
       <div class="grid" id="profileGrid"></div>
       <p class="top-empty" id="profileEmpty" style="display:none;">Todavía no has subido ningún video.</p>
+
+      <h4 style="font-family:var(--font-display);font-size:1.2rem;margin:32px 0 16px;">🔖 Mis favoritos</h4>
+      <div class="grid" id="favoritosGrid"></div>
+      <p class="top-empty" id="favoritosEmpty" style="display:none;">Todavía no guardaste ningún video.</p>
     </div>
   </div>
 </div>
@@ -982,6 +991,48 @@
       <button type="submit" class="upload-submit">Guardar perfil</button>
       <p class="upload-note">Si no eliges una foto/portada nueva, se conserva la actual.</p>
     </form>
+  </div>
+</div>
+
+<div class="video-modal" id="adminModal">
+  <div class="video-modal-inner" style="max-width:800px;">
+    <div class="video-modal-head">
+      <span>PANEL DE ADMINISTRADOR</span>
+      <button class="video-modal-close" onclick="closeAdmin()">✕</button>
+    </div>
+    <div style="padding:24px 28px 30px;">
+      <h4 style="font-family:var(--font-display);font-size:1.2rem;margin-bottom:16px;">🚩 Reportes pendientes</h4>
+      <div id="reportesList"></div>
+      <p class="top-empty" id="reportesEmpty" style="display:none;">No hay reportes pendientes. 🎉</p>
+    </div>
+  </div>
+</div>
+
+<div class="video-modal" id="publicProfileModal">
+  <div class="video-modal-inner" style="max-width:900px;">
+    <div class="video-modal-head">
+      <span>PERFIL</span>
+      <button class="video-modal-close" onclick="closePublicProfile()">✕</button>
+    </div>
+    <div class="profile-cover" id="pubCover"></div>
+    <div style="padding:0 28px 30px;">
+      <div class="profile-header">
+        <div class="profile-avatar" id="pubAvatar">?</div>
+        <div style="flex:1;">
+          <h3 id="pubName" style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;"></h3>
+          <p id="pubBio" style="margin-top:6px;font-size:0.88rem;color:var(--ink-dim);"></p>
+        </div>
+        <button class="edit-btn" id="followBtn" onclick="toggleSeguir()">Seguir</button>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-box"><span class="stat-num" id="pubStatVideos">0</span><span class="stat-label">Videos</span></div>
+        <div class="stat-box"><span class="stat-num" id="pubStatSeguidores">0</span><span class="stat-label">Seguidores</span></div>
+        <div class="stat-box"><span class="stat-num" id="pubStatSiguiendo">0</span><span class="stat-label">Siguiendo</span></div>
+      </div>
+      <h4 style="font-family:var(--font-display);font-size:1.2rem;margin:28px 0 16px;">Sus videos</h4>
+      <div class="grid" id="publicProfileGrid"></div>
+      <p class="top-empty" id="publicProfileEmpty" style="display:none;">Esta persona todavía no ha subido videos.</p>
+    </div>
   </div>
 </div>
 
@@ -1135,6 +1186,8 @@
     sb.auth.signOut();
     closeProfile();
     closeEditProfile();
+    closePublicProfile();
+    closeAdmin();
   }
 
   function actualizarNavAuth(){
@@ -1147,10 +1200,14 @@
       const avatarHtml = avatarUrl
         ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">`
         : '';
+      const adminBtn = currentUser.email === 'bolix@gmail.com'
+        ? `<button class="logout-btn" style="border-color:var(--acid);color:var(--acid);" onclick="abrirAdmin()">🛡️ Admin</button>`
+        : '';
       nav.innerHTML = `
         <div class="user-badge">
           ${avatarHtml}
           <span class="email" style="cursor:pointer;text-decoration:underline;" onclick="abrirPerfil()">${nombre}</span>
+          ${adminBtn}
           <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
           <button class="nav-cta" onclick="openUpload()">Subir video</button>
         </div>
@@ -1201,6 +1258,59 @@
     t.textContent = mensaje;
     cont.appendChild(t);
     setTimeout(function(){ t.remove(); }, 4000);
+  }
+
+  // ---------- ME GUSTA Y FAVORITOS ----------
+  function cargarLikeYFavorito(videoId){
+    sb.from('likes').select('*', { count: 'exact' }).eq('video_id', videoId)
+      .then(function({ count }){
+        document.getElementById('likeCount').textContent = count || 0;
+      });
+
+    const likeBtn = document.getElementById('likeBtn');
+    const favBtn = document.getElementById('favBtn');
+    likeBtn.classList.remove('active');
+    favBtn.classList.remove('active');
+    favBtn.textContent = '🔖 Guardar';
+    if (!currentUser) return;
+
+    sb.from('likes').select('*').eq('video_id', videoId).eq('user_id', currentUser.id).maybeSingle()
+      .then(function({ data }){
+        if (data) likeBtn.classList.add('active');
+      });
+    sb.from('favoritos').select('*').eq('video_id', videoId).eq('user_id', currentUser.id).maybeSingle()
+      .then(function({ data }){
+        if (data){ favBtn.classList.add('active'); favBtn.textContent = '✅ Guardado'; }
+      });
+  }
+
+  function toggleLike(){
+    if (!currentUser || !videoActualId){ mostrarToast('Inicia sesión para dar me gusta.', 'error'); return; }
+    const likeBtn = document.getElementById('likeBtn');
+    const yaActivo = likeBtn.classList.contains('active');
+    const accion = yaActivo
+      ? sb.from('likes').delete().eq('video_id', videoActualId).eq('user_id', currentUser.id)
+      : sb.from('likes').insert([{ video_id: videoActualId, user_id: currentUser.id }]);
+
+    accion.then(function({ error }){
+      if (error){ mostrarToast('No se pudo actualizar: ' + error.message, 'error'); return; }
+      cargarLikeYFavorito(videoActualId);
+    });
+  }
+
+  function toggleFavorito(){
+    if (!currentUser || !videoActualId){ mostrarToast('Inicia sesión para guardar videos.', 'error'); return; }
+    const favBtn = document.getElementById('favBtn');
+    const yaActivo = favBtn.classList.contains('active');
+    const accion = yaActivo
+      ? sb.from('favoritos').delete().eq('video_id', videoActualId).eq('user_id', currentUser.id)
+      : sb.from('favoritos').insert([{ video_id: videoActualId, user_id: currentUser.id }]);
+
+    accion.then(function({ error }){
+      if (error){ mostrarToast('No se pudo actualizar: ' + error.message, 'error'); return; }
+      mostrarToast(yaActivo ? 'Quitado de guardados.' : '¡Guardado en favoritos!');
+      cargarLikeYFavorito(videoActualId);
+    });
   }
 
   // ---------- COMENTARIOS ----------
@@ -1257,6 +1367,73 @@
     sb.from('comentarios').delete().eq('id', comentarioId).then(function({ error }){
       if (error){ mostrarToast('No se pudo borrar: ' + error.message, 'error'); return; }
       cargarComentarios(videoId);
+    });
+  }
+
+  // ---------- ADMIN ----------
+  function closeAdmin(){
+    document.getElementById('adminModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('adminModal').addEventListener('click', function(e){
+    if(e.target === this) closeAdmin();
+  });
+
+  function abrirAdmin(){
+    if (!currentUser || currentUser.email !== 'bolix@gmail.com'){ mostrarToast('No tienes permiso para ver esto.', 'error'); return; }
+    document.getElementById('adminModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    cargarReportes();
+  }
+
+  function cargarReportes(){
+    const lista = document.getElementById('reportesList');
+    const vacio = document.getElementById('reportesEmpty');
+    lista.innerHTML = '<p class="top-empty">Cargando...</p>';
+
+    sb.from('reportes').select('*, videos(titulo, id)').order('created_at', { ascending: false })
+      .then(function({ data, error }){
+        if (error){ lista.innerHTML = ''; mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        if (!data || data.length === 0){
+          lista.innerHTML = '';
+          vacio.style.display = 'block';
+          return;
+        }
+        vacio.style.display = 'none';
+        lista.innerHTML = '';
+        data.forEach(function(r){
+          const item = document.createElement('div');
+          item.className = 'comment-item';
+          const tituloVideo = r.videos ? r.videos.titulo : '(video ya borrado)';
+          item.innerHTML = `
+            <div class="comment-body">
+              <span class="comment-author">${tituloVideo}</span>
+              <span class="comment-text">Motivo: ${r.motivo}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              ${r.videos ? `<button class="delete-btn" onclick="adminBorrarVideoReportado('${r.videos.id}', '${r.id}')">Borrar video</button>` : ''}
+              <button class="edit-btn" onclick="adminDescartarReporte('${r.id}')">Descartar</button>
+            </div>
+          `;
+          lista.appendChild(item);
+        });
+      });
+  }
+
+  function adminBorrarVideoReportado(videoId, reporteId){
+    if (!confirm('¿Borrar este video permanentemente? No se puede deshacer.')) return;
+    sb.rpc('admin_borrar_video', { target_id: videoId }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      document.querySelectorAll('.card[data-db-id="' + videoId + '"]').forEach(function(c){ c.remove(); });
+      mostrarToast('Video borrado por administrador.');
+      cargarReportes();
+    });
+  }
+
+  function adminDescartarReporte(reporteId){
+    sb.rpc('admin_borrar_reporte', { target_id: reporteId }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      cargarReportes();
     });
   }
 
@@ -1357,6 +1534,8 @@
 
   let videoActualId = null;
 
+  let videoActualAutorId = null;
+
   function openVideo(src, title, dbId){
     const modal = document.getElementById('videoModal');
     const video = document.getElementById('modalVideo');
@@ -1366,9 +1545,11 @@
     video.play();
     document.body.style.overflow = 'hidden';
     videoActualId = dbId || null;
+    videoActualAutorId = null;
 
     const acciones = document.querySelector('#videoModal .video-actions');
     const comentariosSection = document.querySelector('#videoModal .comments-section');
+    const autorEl = document.getElementById('modalAuthor');
     if (videoActualId){
       acciones.style.display = 'flex';
       comentariosSection.style.display = 'block';
@@ -1376,10 +1557,23 @@
         if (error) console.error('No se pudo sumar la vista:', error);
       });
       cargarComentarios(videoActualId);
+      cargarLikeYFavorito(videoActualId);
+
+      sb.from('videos').select('user_id, autor').eq('id', videoActualId).single()
+        .then(function({ data }){
+          if (!data) return;
+          videoActualAutorId = data.user_id;
+          autorEl.textContent = data.autor ? 'Por ' + data.autor : '';
+          autorEl.onclick = function(){
+            if (currentUser && currentUser.id === data.user_id){ closeVideo(); abrirPerfil(); }
+            else { closeVideo(); verPerfilPublico(data.user_id); }
+          };
+        });
     } else {
       // Los 6 videos de muestra no están en la base, no tienen comentarios/reportes reales
       acciones.style.display = 'none';
       comentariosSection.style.display = 'none';
+      autorEl.textContent = '';
     }
   }
   function closeVideo(){
@@ -1445,7 +1639,9 @@
       videosPorId[dbId] = { titulo, categoria, descripcion: desc, video_url: videoURL, cover_url: coverURL, es_short: !!esShort };
       botones = `<button class="edit-btn" onclick="abrirEdicion('${dbId}')">Editar</button><button class="delete-btn" onclick="borrarVideo('${dbId}', this)">Borrar</button>`;
     }
-    const autorTxt = autor ? `<span>Por ${autor}</span>` : '<span>0 vistas</span>';
+    const autorTxt = autor
+      ? `<span style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();verPerfilPublico('${ownerId}')">Por ${autor}</span>`
+      : '<span>0 vistas</span>';
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -1677,6 +1873,24 @@
     document.getElementById('profileBio').textContent = meta.bio || '';
   }
 
+  function cargarFavoritosPerfil(){
+    sb.from('favoritos').select('*, videos(*)').eq('user_id', currentUser.id).order('created_at', { ascending: false })
+      .then(function({ data, error }){
+        if (error){ console.error('No se pudieron cargar los favoritos:', error); return; }
+        const validos = (data || []).filter(function(f){ return f.videos; });
+        if (validos.length === 0){
+          document.getElementById('favoritosEmpty').style.display = 'block';
+          return;
+        }
+        validos.forEach(function(f){
+          const v = f.videos;
+          catalogCount++;
+          const id = 'BLX-' + String(catalogCount).padStart(3,'0');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'favoritosGrid');
+        });
+      });
+  }
+
   function abrirPerfil(){
     if (!currentUser) return;
     const nombre = (currentUser.user_metadata && currentUser.user_metadata.username) || currentUser.email;
@@ -1685,9 +1899,13 @@
     pintarAvatarYPortada();
     document.getElementById('profileGrid').innerHTML = '';
     document.getElementById('profileEmpty').style.display = 'none';
+    document.getElementById('favoritosGrid').innerHTML = '';
+    document.getElementById('favoritosEmpty').style.display = 'none';
 
     document.getElementById('profileModal').classList.add('open');
     document.body.style.overflow = 'hidden';
+
+    cargarFavoritosPerfil();
 
     sb.from('videos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
       .then(function({ data, error }){
@@ -1708,6 +1926,88 @@
           crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid');
         });
       });
+  }
+
+  // ---------- PERFIL PÚBLICO Y SEGUIR ----------
+  let perfilPublicoActualId = null;
+
+  function closePublicProfile(){
+    document.getElementById('publicProfileModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('publicProfileModal').addEventListener('click', function(e){
+    if(e.target === this) closePublicProfile();
+  });
+
+  function verPerfilPublico(userId){
+    if (!userId) return;
+    if (currentUser && currentUser.id === userId){ abrirPerfil(); return; }
+    perfilPublicoActualId = userId;
+    document.getElementById('publicProfileGrid').innerHTML = '';
+    document.getElementById('publicProfileEmpty').style.display = 'none';
+    document.getElementById('publicProfileModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('perfiles').select('*').eq('user_id', userId).maybeSingle()
+      .then(function({ data }){
+        const p = data || {};
+        document.getElementById('pubName').textContent = p.username || 'Usuario de Bolíx';
+        document.getElementById('pubBio').textContent = p.bio || '';
+        const avatarEl = document.getElementById('pubAvatar');
+        if (p.avatar_url){ avatarEl.style.backgroundImage = `url('${p.avatar_url}')`; avatarEl.textContent = ''; }
+        else { avatarEl.style.backgroundImage = 'none'; avatarEl.textContent = (p.username || 'U').charAt(0); }
+        document.getElementById('pubCover').style.backgroundImage = p.portada_url ? `url('${p.portada_url}')` : 'none';
+      });
+
+    actualizarBotonSeguir(userId);
+    cargarStatsSeguidores(userId);
+
+    sb.from('videos').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+      .then(function({ data }){
+        document.getElementById('pubStatVideos').textContent = data ? data.length : 0;
+        if (!data || data.length === 0){
+          document.getElementById('publicProfileEmpty').style.display = 'block';
+          return;
+        }
+        data.forEach(function(v){
+          catalogCount++;
+          const id = 'BLX-' + String(catalogCount).padStart(3,'0');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'publicProfileGrid');
+        });
+      });
+  }
+
+  function cargarStatsSeguidores(userId){
+    sb.from('seguidores').select('*', { count: 'exact', head: true }).eq('seguido_id', userId)
+      .then(function({ count }){ document.getElementById('pubStatSeguidores').textContent = count || 0; });
+    sb.from('seguidores').select('*', { count: 'exact', head: true }).eq('seguidor_id', userId)
+      .then(function({ count }){ document.getElementById('pubStatSiguiendo').textContent = count || 0; });
+  }
+
+  function actualizarBotonSeguir(userId){
+    const btn = document.getElementById('followBtn');
+    if (!currentUser){ btn.textContent = 'Seguir'; btn.classList.remove('active'); return; }
+    sb.from('seguidores').select('*').eq('seguidor_id', currentUser.id).eq('seguido_id', userId).maybeSingle()
+      .then(function({ data }){
+        if (data){ btn.textContent = '✅ Siguiendo'; btn.classList.add('active'); }
+        else { btn.textContent = 'Seguir'; btn.classList.remove('active'); }
+      });
+  }
+
+  function toggleSeguir(){
+    if (!currentUser){ mostrarToast('Inicia sesión para seguir usuarios.', 'error'); return; }
+    if (!perfilPublicoActualId) return;
+    const btn = document.getElementById('followBtn');
+    const yaSigue = btn.classList.contains('active');
+    const accion = yaSigue
+      ? sb.from('seguidores').delete().eq('seguidor_id', currentUser.id).eq('seguido_id', perfilPublicoActualId)
+      : sb.from('seguidores').insert([{ seguidor_id: currentUser.id, seguido_id: perfilPublicoActualId }]);
+
+    accion.then(function({ error }){
+      if (error){ mostrarToast('No se pudo actualizar: ' + error.message, 'error'); return; }
+      actualizarBotonSeguir(perfilPublicoActualId);
+      cargarStatsSeguidores(perfilPublicoActualId);
+    });
   }
 
   function abrirEdicionPerfil(){
@@ -1780,7 +2080,16 @@
           avatar_url: resultado.avatarFinal,
           portada_url: resultado.coverFinal
         });
-        return sb.auth.updateUser({ data: nuevaMeta });
+        return sb.auth.updateUser({ data: nuevaMeta }).then(function(res){
+          return sb.from('perfiles').upsert({
+            user_id: currentUser.id,
+            username: nuevoUsername,
+            bio: nuevaBio,
+            avatar_url: resultado.avatarFinal,
+            portada_url: resultado.coverFinal,
+            updated_at: new Date().toISOString()
+          }).then(function(){ return res; });
+        });
       })
       .then(function({ data, error }){
         if (error) throw error;
@@ -1915,7 +2224,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); }
   });
 </script>
 
