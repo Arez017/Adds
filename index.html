@@ -577,6 +577,7 @@
   </div>
   <a href="#topPopulares" class="subnav-link">🔥 Top Populares</a>
   <a href="#shorts" class="subnav-link">⚡ Shorts</a>
+  <a href="#" class="subnav-link" onclick="abrirSiguiendo();return false;">👥 Siguiendo</a>
   <a href="#" class="subnav-link" onclick="openUpload();return false;">Subir video</a>
 </div>
 
@@ -584,6 +585,7 @@
   <a href="#catalogo" onclick="closeMobileNav()">Explorar</a>
   <a href="#topPopulares" onclick="closeMobileNav()">Top Populares</a>
   <a href="#shorts" onclick="closeMobileNav()">Shorts</a>
+  <a href="#" onclick="closeMobileNav();abrirSiguiendo();">Siguiendo</a>
   <a href="#" onclick="closeMobileNav()">Acerca de</a>
 </div>
 
@@ -1028,6 +1030,19 @@
   </div>
 </div>
 
+<div class="video-modal" id="siguiendoModal">
+  <div class="video-modal-inner" style="max-width:900px;">
+    <div class="video-modal-head">
+      <span>👥 SIGUIENDO</span>
+      <button class="video-modal-close" onclick="closeSiguiendo()">✕</button>
+    </div>
+    <div style="padding:24px 28px 30px;">
+      <div class="grid" id="siguiendoGrid"></div>
+      <p class="top-empty" id="siguiendoEmpty" style="display:none;">Todavía no sigues a nadie, o la gente que sigues no ha subido videos.</p>
+    </div>
+  </div>
+</div>
+
 <div class="video-modal" id="publicProfileModal">
   <div class="video-modal-inner" style="max-width:900px;">
     <div class="video-modal-head">
@@ -1209,6 +1224,7 @@
     closeEditProfile();
     closePublicProfile();
     closeAdmin();
+    closeSiguiendo();
   }
 
   function actualizarNavAuth(){
@@ -2073,6 +2089,46 @@
       });
   }
 
+  // ---------- FEED DE SIGUIENDO ----------
+  function closeSiguiendo(){
+    document.getElementById('siguiendoModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('siguiendoModal').addEventListener('click', function(e){
+    if(e.target === this) closeSiguiendo();
+  });
+
+  function abrirSiguiendo(){
+    if (!currentUser){ mostrarToast('Inicia sesión para ver a quién sigues.', 'error'); return; }
+    document.getElementById('siguiendoGrid').innerHTML = '';
+    document.getElementById('siguiendoEmpty').style.display = 'none';
+    document.getElementById('siguiendoModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('seguidores').select('seguido_id').eq('seguidor_id', currentUser.id)
+      .then(function({ data, error }){
+        if (error){ mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        const ids = (data || []).map(function(s){ return s.seguido_id; });
+        if (ids.length === 0){
+          document.getElementById('siguiendoEmpty').style.display = 'block';
+          return;
+        }
+        sb.from('videos').select('*').in('user_id', ids).order('created_at', { ascending: false })
+          .then(function({ data: videos, error: err2 }){
+            if (err2){ mostrarToast('No se pudo cargar: ' + err2.message, 'error'); return; }
+            if (!videos || videos.length === 0){
+              document.getElementById('siguiendoEmpty').style.display = 'block';
+              return;
+            }
+            videos.forEach(function(v){
+              catalogCount++;
+              const id = 'BLX-' + String(catalogCount).padStart(3,'0');
+              crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'siguiendoGrid', v.destacado);
+            });
+          });
+      });
+  }
+
   // ---------- PERFIL PÚBLICO Y SEGUIR ----------
   let perfilPublicoActualId = null;
 
@@ -2369,7 +2425,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); }
   });
 </script>
 
