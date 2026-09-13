@@ -173,13 +173,25 @@
     font-size:1.8rem;font-weight:700;flex-shrink:0;box-shadow:0 0 20px rgba(155,92,255,0.5);
     text-transform:uppercase;border:3px solid var(--bg-panel);background-size:cover;background-position:center;
   }
-  .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:10px;}
+  .profile-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:10px;}
   .stat-box{
     background:var(--bg-panel-2);border:1px solid var(--line);padding:16px;text-align:center;
   }
   .stat-num{display:block;font-family:var(--font-display);font-size:1.7rem;font-weight:700;color:var(--acid);}
   .stat-label{font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;}
   #profileGrid.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;}
+
+  .persona-row{
+    display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .persona-row:hover{background:var(--bg-panel-2);}
+  .persona-avatar{
+    width:40px;height:40px;border-radius:50%;background:var(--violet);color:#08060F;
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+    font-weight:700;flex-shrink:0;background-size:cover;background-position:center;text-transform:uppercase;
+  }
+  .persona-nombre{font-family:var(--font-body);font-size:0.92rem;color:var(--ink);}
   @media (max-width:640px){ .profile-header{flex-wrap:wrap;} .profile-header .edit-btn{margin-left:auto;} }
 
   /* ---------- SHORTS ---------- */
@@ -946,6 +958,8 @@
         <div class="stat-box"><span class="stat-num" id="statVideos">0</span><span class="stat-label">Videos</span></div>
         <div class="stat-box"><span class="stat-num" id="statVistas">0</span><span class="stat-label">Vistas totales</span></div>
         <div class="stat-box"><span class="stat-num" id="statShorts">0</span><span class="stat-label">Shorts</span></div>
+        <div class="stat-box" style="cursor:pointer;" onclick="abrirListaGente('seguidores')"><span class="stat-num" id="statSeguidores">0</span><span class="stat-label">Seguidores</span></div>
+        <div class="stat-box" style="cursor:pointer;" onclick="abrirListaGente('siguiendo')"><span class="stat-num" id="statSiguiendo">0</span><span class="stat-label">Siguiendo</span></div>
       </div>
       <h4 style="font-family:var(--font-display);font-size:1.2rem;margin:28px 0 16px;">Mis videos</h4>
       <div class="grid" id="profileGrid"></div>
@@ -1026,6 +1040,19 @@
         <p class="top-empty" id="usuariosEmpty" style="display:none;">Todavía no hay usuarios con perfil creado.</p>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<div class="video-modal" id="listaGenteModal">
+  <div class="upload-modal-inner">
+    <div class="video-modal-head">
+      <span id="listaGenteTitulo">SEGUIDORES</span>
+      <button class="video-modal-close" onclick="closeListaGente()">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <div id="listaGenteContenido"></div>
+      <p class="top-empty" id="listaGenteEmpty" style="display:none;"></p>
     </div>
   </div>
 </div>
@@ -1225,6 +1252,7 @@
     closePublicProfile();
     closeAdmin();
     closeSiguiendo();
+    closeListaGente();
   }
 
   function actualizarNavAuth(){
@@ -1778,11 +1806,17 @@
   ];
   const videosPorId = {}; // guarda los datos de cada video subido, para poder editarlos sin volver a consultar
 
-  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId, destacado){
+  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId, destacado, createdAt){
     const svg = catalogSvgs[catalogCount % catalogSvgs.length];
     const thumbContent = coverURL
       ? `<img class="cover-img" src="${coverURL}" alt="">`
       : `<svg viewBox="0 0 100 100" fill="none">${svg}</svg>`;
+
+    let etiquetaTiempo = '';
+    if (createdAt){
+      const dias = (Date.now() - new Date(createdAt).getTime()) / 86400000;
+      if (dias < 3) etiquetaTiempo = '<span class="duration">Nuevo</span>';
+    }
 
     const esDueno = currentUser && ownerId && currentUser.id === ownerId;
     let botones = '';
@@ -1812,7 +1846,7 @@
       <div class="thumb ${coverURL ? 'has-cover' : ''}" onclick="openVideo('${videoURL}','${id} · ${titulo.replace(/'/g,"")}', ${dbId ? `'${dbId}'` : 'null'})">
         ${thumbContent}
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
-        <span class="duration">Nuevo</span>
+        ${etiquetaTiempo}
       </div>
       <div class="card-body">
         <span class="catalog-id">${id} · ${categoria.toUpperCase()}</span>
@@ -1965,7 +1999,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'grid', v.destacado);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'grid', v.destacado, v.created_at);
         });
       });
   }
@@ -2047,7 +2081,7 @@
           const v = f.videos;
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'favoritosGrid', v.destacado);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'favoritosGrid', v.destacado, v.created_at);
         });
       });
   }
@@ -2067,6 +2101,7 @@
     document.body.style.overflow = 'hidden';
 
     cargarFavoritosPerfil();
+    cargarStatsSeguidores(currentUser.id, 'statSeguidores', 'statSiguiendo');
 
     sb.from('videos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
       .then(function({ data, error }){
@@ -2084,7 +2119,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid', v.destacado);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid', v.destacado, v.created_at);
         });
       });
   }
@@ -2123,7 +2158,7 @@
             videos.forEach(function(v){
               catalogCount++;
               const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-              crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'siguiendoGrid', v.destacado);
+              crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'siguiendoGrid', v.destacado, v.created_at);
             });
           });
       });
@@ -2173,16 +2208,66 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'publicProfileGrid', v.destacado);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'publicProfileGrid', v.destacado, v.created_at);
         });
       });
   }
 
-  function cargarStatsSeguidores(userId){
+  function cargarStatsSeguidores(userId, idSeguidores, idSiguiendo){
+    idSeguidores = idSeguidores || 'pubStatSeguidores';
+    idSiguiendo = idSiguiendo || 'pubStatSiguiendo';
     sb.from('seguidores').select('*', { count: 'exact', head: true }).eq('seguido_id', userId)
-      .then(function({ count }){ document.getElementById('pubStatSeguidores').textContent = count || 0; });
+      .then(function({ count }){ document.getElementById(idSeguidores).textContent = count || 0; });
     sb.from('seguidores').select('*', { count: 'exact', head: true }).eq('seguidor_id', userId)
-      .then(function({ count }){ document.getElementById('pubStatSiguiendo').textContent = count || 0; });
+      .then(function({ count }){ document.getElementById(idSiguiendo).textContent = count || 0; });
+  }
+
+  function closeListaGente(){
+    document.getElementById('listaGenteModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('listaGenteModal').addEventListener('click', function(e){
+    if(e.target === this) closeListaGente();
+  });
+
+  function abrirListaGente(tipo){
+    if (!currentUser) return;
+    document.getElementById('listaGenteTitulo').textContent = tipo === 'seguidores' ? 'SEGUIDORES' : 'SIGUIENDO';
+    const cont = document.getElementById('listaGenteContenido');
+    const vacio = document.getElementById('listaGenteEmpty');
+    cont.innerHTML = '<p class="top-empty">Cargando...</p>';
+    vacio.style.display = 'none';
+    document.getElementById('listaGenteModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    const consulta = tipo === 'seguidores'
+      ? sb.from('seguidores').select('seguidor_id').eq('seguido_id', currentUser.id)
+      : sb.from('seguidores').select('seguido_id').eq('seguidor_id', currentUser.id);
+
+    consulta.then(function({ data, error }){
+      if (error){ cont.innerHTML = ''; mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+      const ids = (data || []).map(function(r){ return tipo === 'seguidores' ? r.seguidor_id : r.seguido_id; });
+      if (ids.length === 0){
+        cont.innerHTML = '';
+        vacio.textContent = tipo === 'seguidores' ? 'Todavía nadie te sigue.' : 'Todavía no sigues a nadie.';
+        vacio.style.display = 'block';
+        return;
+      }
+      sb.from('perfiles').select('*').in('user_id', ids).then(function({ data: perfiles }){
+        cont.innerHTML = '';
+        (perfiles || []).forEach(function(p){
+          const row = document.createElement('div');
+          row.className = 'persona-row';
+          row.onclick = function(){ closeListaGente(); verPerfilPublico(p.user_id); };
+          const avatarStyle = p.avatar_url ? `background-image:url('${p.avatar_url}');` : '';
+          row.innerHTML = `
+            <div class="persona-avatar" style="${avatarStyle}">${p.avatar_url ? '' : (p.username || 'U').charAt(0)}</div>
+            <span class="persona-nombre">${p.username || 'Usuario de Bolíx'}</span>
+          `;
+          cont.appendChild(row);
+        });
+      });
+    });
   }
 
   function actualizarBotonSeguir(userId){
@@ -2400,7 +2485,7 @@
       .then(function(resultado){
         catalogCount++;
         const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-        crearTarjeta(id, category, title, desc, resultado.urls.videoURL, resultado.urls.coverURL, resultado.fila.id, currentUser.id, resultado.fila.autor);
+        crearTarjeta(id, category, title, desc, resultado.urls.videoURL, resultado.urls.coverURL, resultado.fila.id, currentUser.id, resultado.fila.autor, esShort, 'grid', false, resultado.fila.created_at);
         if (esShort){
           document.getElementById('shortsTrack').innerHTML = '';
           cargarShorts();
@@ -2425,7 +2510,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); closeListaGente(); }
   });
 </script>
 
