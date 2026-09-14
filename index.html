@@ -192,6 +192,20 @@
     font-weight:700;flex-shrink:0;background-size:cover;background-position:center;text-transform:uppercase;
   }
   .persona-nombre{font-family:var(--font-body);font-size:0.92rem;color:var(--ink);}
+
+  .notif-bell{position:relative;background:none;border:none;color:var(--ink);font-size:1.2rem;cursor:pointer;padding:4px;}
+  .notif-badge{
+    position:absolute;top:-2px;right:-2px;background:var(--magenta);color:#fff;
+    font-family:var(--font-mono);font-size:0.62rem;font-weight:700;border-radius:50%;
+    width:16px;height:16px;display:flex;align-items:center;justify-content:center;
+  }
+  .notif-item{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .notif-item:hover{background:var(--bg-panel-2);}
+  .notif-item.sin-leer{border-left:3px solid var(--acid);padding-left:10px;}
+  .notif-text{font-size:0.88rem;color:var(--ink);}
+  .notif-time{font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-dim);display:block;margin-top:3px;}
+
+  .verificado-badge{color:var(--cyan);margin-left:4px;}
   @media (max-width:640px){ .profile-header{flex-wrap:wrap;} .profile-header .edit-btn{margin-left:auto;} }
 
   /* ---------- SHORTS ---------- */
@@ -590,6 +604,7 @@
   <a href="#topPopulares" class="subnav-link">🔥 Top Populares</a>
   <a href="#shorts" class="subnav-link">⚡ Shorts</a>
   <a href="#" class="subnav-link" onclick="abrirSiguiendo();return false;">👥 Siguiendo</a>
+  <a href="#" class="subnav-link" onclick="abrirHistorial();return false;">🕐 Historial</a>
   <a href="#" class="subnav-link" onclick="openUpload();return false;">Subir video</a>
 </div>
 
@@ -598,6 +613,7 @@
   <a href="#topPopulares" onclick="closeMobileNav()">Top Populares</a>
   <a href="#shorts" onclick="closeMobileNav()">Shorts</a>
   <a href="#" onclick="closeMobileNav();abrirSiguiendo();">Siguiendo</a>
+  <a href="#" onclick="closeMobileNav();abrirHistorial();">Historial</a>
   <a href="#" onclick="closeMobileNav()">Acerca de</a>
 </div>
 
@@ -649,6 +665,11 @@
 <section class="catalog" id="catalogo">
   <div class="section-head">
     <h2>Catálogo de videos</h2>
+    <select id="ordenSelect" onchange="ordenarCatalogo(this.value)" style="background:var(--bg-panel-2);border:1px solid var(--line-bright);color:var(--ink);padding:8px 12px;font-family:var(--font-mono);font-size:0.8rem;">
+      <option value="recientes">Más recientes</option>
+      <option value="vistos">Más vistos</option>
+      <option value="azar">Al azar</option>
+    </select>
     <div class="filters">
       <div class="filter-chip active" onclick="filtrarCategoria('Todos', this)">Todos</div>
       <div class="filter-chip" onclick="filtrarCategoria('Vlogs', this)">Vlogs</div>
@@ -663,7 +684,7 @@
 
   <div class="grid" id="grid">
 
-    <div class="card" data-categoria="Vlogs">
+    <div class="card" data-categoria="Vlogs" data-vistas="18200" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4','BLX-001 · Un día en mi vida')">
         <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="30" stroke="#9B5CFF" stroke-width="2"/><circle cx="50" cy="50" r="10" fill="#FF3EC9"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -677,7 +698,7 @@
       </div>
     </div>
 
-    <div class="card" data-categoria="Música">
+    <div class="card" data-categoria="Música" data-vistas="9800" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4','BLX-002 · Top 10 canciones del mes')">
         <svg viewBox="0 0 100 100" fill="none"><path d="M20 70 Q50 20 80 70" stroke="#9B5CFF" stroke-width="2" fill="none"/><circle cx="50" cy="45" r="8" fill="#34F5D4"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -691,7 +712,7 @@
       </div>
     </div>
 
-    <div class="card" data-categoria="Gaming">
+    <div class="card" data-categoria="Gaming" data-vistas="24500" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4','BLX-003 · Speedrun en directo')">
         <svg viewBox="0 0 100 100" fill="none"><rect x="30" y="20" width="40" height="60" rx="18" stroke="#9B5CFF" stroke-width="2"/><line x1="50" y1="30" x2="50" y2="70" stroke="#FF3EC9" stroke-width="2"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -705,7 +726,7 @@
       </div>
     </div>
 
-    <div class="card" data-categoria="Comedia">
+    <div class="card" data-categoria="Comedia" data-vistas="7100" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4','BLX-004 · Reaccionando a memes virales')">
         <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="8" fill="#34F5D4"/><circle cx="35" cy="40" r="5" fill="#34F5D4"/><circle cx="65" cy="42" r="6" fill="#34F5D4"/><circle cx="45" cy="65" r="4" fill="#34F5D4"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -719,7 +740,7 @@
       </div>
     </div>
 
-    <div class="card" data-categoria="Tutoriales">
+    <div class="card" data-categoria="Tutoriales" data-vistas="31000" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4','BLX-005 · Cómo edito mis videos')">
         <svg viewBox="0 0 100 100" fill="none"><path d="M50 20 L50 80 M30 40 Q50 30 70 40 M30 60 Q50 50 70 60" stroke="#9B5CFF" stroke-width="2" fill="none"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -733,7 +754,7 @@
       </div>
     </div>
 
-    <div class="card" data-categoria="Tendencias">
+    <div class="card" data-categoria="Tendencias" data-vistas="14600" data-creado="0">
       <div class="thumb" onclick="openVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4','BLX-006 · Rutina de la mañana')">
         <svg viewBox="0 0 100 100" fill="none"><path d="M20 80 Q35 20 50 80 Q65 20 80 80" stroke="#9B5CFF" stroke-width="2" fill="none"/></svg>
         <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
@@ -785,7 +806,10 @@
     <div class="video-actions">
       <button class="edit-btn" id="likeBtn" onclick="toggleLike()">🤍 <span id="likeCount">0</span></button>
       <button class="edit-btn" id="favBtn" onclick="toggleFavorito()">🔖 Guardar</button>
-      <button class="edit-btn" onclick="compartirVideo()">🔗 Compartir</button>
+      <button class="edit-btn" onclick="compartirVideo()">🔗 Copiar link</button>
+      <button class="edit-btn" onclick="compartirRed('whatsapp')">💬 WhatsApp</button>
+      <button class="edit-btn" onclick="compartirRed('facebook')">📘 Facebook</button>
+      <button class="edit-btn" onclick="compartirRed('x')">✖️ X</button>
       <button class="delete-btn" onclick="abrirReporte()">🚩 Reportar</button>
     </div>
 
@@ -1044,6 +1068,32 @@
   </div>
 </div>
 
+<div class="video-modal" id="notifModal">
+  <div class="upload-modal-inner">
+    <div class="video-modal-head">
+      <span>🔔 NOTIFICACIONES</span>
+      <button class="video-modal-close" onclick="closeNotificaciones()">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <div id="notifList"></div>
+      <p class="top-empty" id="notifEmpty" style="display:none;">No tienes notificaciones todavía.</p>
+    </div>
+  </div>
+</div>
+
+<div class="video-modal" id="historialModal">
+  <div class="video-modal-inner" style="max-width:900px;">
+    <div class="video-modal-head">
+      <span>🕐 HISTORIAL</span>
+      <button class="video-modal-close" onclick="closeHistorial()">✕</button>
+    </div>
+    <div style="padding:24px 28px 30px;">
+      <div class="grid" id="historialGrid"></div>
+      <p class="top-empty" id="historialEmpty" style="display:none;">Todavía no has visto ningún video.</p>
+    </div>
+  </div>
+</div>
+
 <div class="video-modal" id="listaGenteModal">
   <div class="upload-modal-inner">
     <div class="video-modal-head">
@@ -1253,6 +1303,8 @@
     closeAdmin();
     closeSiguiendo();
     closeListaGente();
+    closeNotificaciones();
+    closeHistorial();
   }
 
   function actualizarNavAuth(){
@@ -1270,6 +1322,7 @@
         : '';
       nav.innerHTML = `
         <div class="user-badge">
+          <button class="notif-bell" onclick="abrirNotificaciones()">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
           ${avatarHtml}
           <span class="email" style="cursor:pointer;text-decoration:underline;" onclick="abrirPerfil()">${nombre}</span>
           ${adminBtn}
@@ -1277,6 +1330,7 @@
           <button class="nav-cta" onclick="openUpload()">Subir video</button>
         </div>
       `;
+      revisarNotificacionesNuevas();
     } else {
       nav.innerHTML = `
         <button class="btn-ghost" style="border:none;" onclick="openAuth('login')">Iniciar sesión</button>
@@ -1508,10 +1562,11 @@
           item.className = 'comment-item';
           item.innerHTML = `
             <div class="comment-body">
-              <span class="comment-author">${u.username || '(sin nombre)'} ${estadoTxt}</span>
+              <span class="comment-author">${u.username || '(sin nombre)'} ${u.verificado ? '<span class="verificado-badge">✅</span>' : ''} ${estadoTxt}</span>
               <span class="comment-text">${u.bio || ''}</span>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
+              <button class="edit-btn" onclick="toggleVerificado('${u.user_id}', ${!u.verificado})">${u.verificado ? 'Quitar ✅' : 'Verificar'}</button>
               ${estaBaneado
                 ? `<button class="edit-btn" onclick="toggleBanUsuario('${u.user_id}', null)">Desbanear</button>`
                 : `
@@ -1552,6 +1607,14 @@
     sb.rpc('admin_banear_usuario', { target_user: userId, hasta: hasta }).then(function({ error }){
       if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
       mostrarToast(hasta ? 'Usuario baneado.' : 'Usuario desbaneado.');
+      cargarUsuariosAdmin();
+    });
+  }
+
+  function toggleVerificado(userId, nuevoValor){
+    sb.rpc('admin_verificar_usuario', { target_user: userId, valor: nuevoValor }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      mostrarToast(nuevoValor ? 'Usuario verificado.' : 'Verificación quitada.');
       cargarUsuariosAdmin();
     });
   }
@@ -1658,6 +1721,17 @@
     }
   }
 
+  function compartirRed(red){
+    if (!videoActualId){ mostrarToast('Este video de muestra no tiene link propio.', 'error'); return; }
+    const url = window.location.origin + window.location.pathname + '?v=' + videoActualId;
+    const titulo = document.getElementById('modalTitle').textContent;
+    let destino = '';
+    if (red === 'whatsapp') destino = 'https://wa.me/?text=' + encodeURIComponent(titulo + ' — ' + url);
+    if (red === 'facebook') destino = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+    if (red === 'x') destino = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(titulo);
+    if (destino) window.open(destino, '_blank', 'noopener,noreferrer');
+  }
+
   function limpiarNombreArchivo(nombre){
     const partes = nombre.split('.');
     const ext = partes.length > 1 ? '.' + partes.pop() : '';
@@ -1704,6 +1778,23 @@
     });
   }
 
+  function ordenarCatalogo(criterio){
+    const grid = document.getElementById('grid');
+    const cards = Array.from(grid.querySelectorAll('.card'));
+
+    if (criterio === 'recientes'){
+      cards.sort(function(a, b){ return parseInt(b.dataset.creado || 0) - parseInt(a.dataset.creado || 0); });
+    } else if (criterio === 'vistos'){
+      cards.sort(function(a, b){ return parseInt(b.dataset.vistas || 0) - parseInt(a.dataset.vistas || 0); });
+    } else if (criterio === 'azar'){
+      for (let i = cards.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+    }
+    cards.forEach(function(c){ grid.appendChild(c); });
+  }
+
   function toggleMobileNav(){
     document.getElementById('mobileNav').classList.toggle('open');
   }
@@ -1737,6 +1828,7 @@
       });
       cargarComentarios(videoActualId);
       cargarLikeYFavorito(videoActualId);
+      registrarHistorial(videoActualId);
 
       sb.from('videos').select('user_id, autor').eq('id', videoActualId).single()
         .then(function({ data }){
@@ -1806,7 +1898,7 @@
   ];
   const videosPorId = {}; // guarda los datos de cada video subido, para poder editarlos sin volver a consultar
 
-  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId, destacado, createdAt){
+  function crearTarjeta(id, categoria, titulo, desc, videoURL, coverURL, dbId, ownerId, autor, esShort, targetId, destacado, createdAt, vistas){
     const svg = catalogSvgs[catalogCount % catalogSvgs.length];
     const thumbContent = coverURL
       ? `<img class="cover-img" src="${coverURL}" alt="">`
@@ -1835,6 +1927,8 @@
     card.className = 'card';
     card.dataset.categoria = categoria;
     if (dbId) card.dataset.dbId = dbId;
+    card.dataset.vistas = vistas || 0;
+    card.dataset.creado = createdAt ? new Date(createdAt).getTime() : 0;
     if (destacado){
       const badge = document.createElement('div');
       badge.style.cssText = 'position:absolute;top:8px;left:8px;background:var(--acid);color:#08060F;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;padding:2px 8px;z-index:2;';
@@ -1999,7 +2093,7 @@
         data.forEach(function(v){
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'grid', v.destacado, v.created_at);
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'grid', v.destacado, v.created_at, v.vistas);
         });
       });
   }
@@ -2102,6 +2196,12 @@
 
     cargarFavoritosPerfil();
     cargarStatsSeguidores(currentUser.id, 'statSeguidores', 'statSiguiendo');
+    sb.from('perfiles').select('verificado').eq('user_id', currentUser.id).maybeSingle()
+      .then(function({ data }){
+        if (data && data.verificado){
+          document.getElementById('profileName').innerHTML = nombre + ' <span class="verificado-badge" title="Cuenta verificada">✅</span>';
+        }
+      });
 
     sb.from('videos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
       .then(function({ data, error }){
@@ -2120,6 +2220,120 @@
           catalogCount++;
           const id = 'BLX-' + String(catalogCount).padStart(3,'0');
           crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'profileGrid', v.destacado, v.created_at);
+        });
+      });
+  }
+
+  // ---------- NOTIFICACIONES ----------
+  function revisarNotificacionesNuevas(){
+    if (!currentUser) return;
+    sb.from('notificaciones').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('leida', false)
+      .then(function({ count }){
+        const badge = document.getElementById('notifBadge');
+        if (!badge) return;
+        if (count > 0){ badge.style.display = 'flex'; badge.textContent = count > 9 ? '9+' : count; }
+        else { badge.style.display = 'none'; }
+      });
+  }
+
+  function textoNotificacion(n){
+    const nombre = n.actor_nombre || 'Alguien';
+    if (n.tipo === 'comentario') return nombre + ' comentó tu video';
+    if (n.tipo === 'like') return nombre + ' le dio me gusta a tu video';
+    if (n.tipo === 'seguidor') return nombre + ' empezó a seguirte';
+    return 'Nueva notificación';
+  }
+
+  function closeNotificaciones(){
+    document.getElementById('notifModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('notifModal').addEventListener('click', function(e){
+    if(e.target === this) closeNotificaciones();
+  });
+
+  function abrirNotificaciones(){
+    if (!currentUser) return;
+    const lista = document.getElementById('notifList');
+    const vacio = document.getElementById('notifEmpty');
+    lista.innerHTML = '<p class="top-empty">Cargando...</p>';
+    document.getElementById('notifModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('notificaciones').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30)
+      .then(function({ data, error }){
+        if (error){ lista.innerHTML = ''; mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        if (!data || data.length === 0){
+          lista.innerHTML = '';
+          vacio.style.display = 'block';
+          return;
+        }
+        vacio.style.display = 'none';
+        lista.innerHTML = '';
+        data.forEach(function(n){
+          const item = document.createElement('div');
+          item.className = 'notif-item' + (n.leida ? '' : ' sin-leer');
+          item.innerHTML = `
+            <span class="notif-text">${textoNotificacion(n)}</span>
+            <span class="notif-time">${new Date(n.created_at).toLocaleString()}</span>
+          `;
+          item.onclick = function(){
+            closeNotificaciones();
+            if (n.tipo === 'seguidor') verPerfilPublico(n.actor_id);
+            else if (n.video_id) abrirVideoPorId(n.video_id);
+          };
+          lista.appendChild(item);
+        });
+        const idsNoLeidas = data.filter(function(n){ return !n.leida; }).map(function(n){ return n.id; });
+        if (idsNoLeidas.length > 0){
+          sb.from('notificaciones').update({ leida: true }).in('id', idsNoLeidas).then(function(){
+            revisarNotificacionesNuevas();
+          });
+        }
+      });
+  }
+
+  function abrirVideoPorId(videoId){
+    sb.from('videos').select('*').eq('id', videoId).single().then(function({ data }){
+      if (!data){ mostrarToast('Ese video ya no existe.', 'error'); return; }
+      openVideo(data.video_url, data.titulo, data.id);
+    });
+  }
+
+  // ---------- HISTORIAL ----------
+  function registrarHistorial(videoId){
+    if (!currentUser || !videoId) return;
+    sb.from('historial').upsert({ user_id: currentUser.id, video_id: videoId, visto_en: new Date().toISOString() });
+  }
+
+  function closeHistorial(){
+    document.getElementById('historialModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('historialModal').addEventListener('click', function(e){
+    if(e.target === this) closeHistorial();
+  });
+
+  function abrirHistorial(){
+    if (!currentUser){ mostrarToast('Inicia sesión para ver tu historial.', 'error'); return; }
+    document.getElementById('historialGrid').innerHTML = '';
+    document.getElementById('historialEmpty').style.display = 'none';
+    document.getElementById('historialModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('historial').select('*, videos(*)').eq('user_id', currentUser.id).order('visto_en', { ascending: false }).limit(30)
+      .then(function({ data, error }){
+        if (error){ mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        const validos = (data || []).filter(function(h){ return h.videos; });
+        if (validos.length === 0){
+          document.getElementById('historialEmpty').style.display = 'block';
+          return;
+        }
+        validos.forEach(function(h){
+          const v = h.videos;
+          catalogCount++;
+          const id = 'BLX-' + String(catalogCount).padStart(3,'0');
+          crearTarjeta(id, v.categoria, v.titulo, v.descripcion, v.video_url, v.cover_url || null, v.id, v.user_id, v.autor, v.es_short, 'historialGrid', v.destacado, v.created_at);
         });
       });
   }
@@ -2188,6 +2402,7 @@
       .then(function({ data }){
         const p = data || {};
         document.getElementById('pubName').textContent = p.username || 'Usuario de Bolíx';
+        if (p.verificado) document.getElementById('pubName').innerHTML += ' <span class="verificado-badge" title="Cuenta verificada">✅</span>';
         document.getElementById('pubBio').textContent = p.bio || '';
         const avatarEl = document.getElementById('pubAvatar');
         if (p.avatar_url){ avatarEl.style.backgroundImage = `url('${p.avatar_url}')`; avatarEl.textContent = ''; }
@@ -2485,7 +2700,7 @@
       .then(function(resultado){
         catalogCount++;
         const id = 'BLX-' + String(catalogCount).padStart(3,'0');
-        crearTarjeta(id, category, title, desc, resultado.urls.videoURL, resultado.urls.coverURL, resultado.fila.id, currentUser.id, resultado.fila.autor, esShort, 'grid', false, resultado.fila.created_at);
+        crearTarjeta(id, category, title, desc, resultado.urls.videoURL, resultado.urls.coverURL, resultado.fila.id, currentUser.id, resultado.fila.autor, esShort, 'grid', false, resultado.fila.created_at, 0);
         if (esShort){
           document.getElementById('shortsTrack').innerHTML = '';
           cargarShorts();
@@ -2510,7 +2725,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); closeListaGente(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); closeListaGente(); closeNotificaciones(); closeHistorial(); }
   });
 </script>
 
