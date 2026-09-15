@@ -607,12 +607,12 @@
   <div class="subnav-dropdown">
     <span class="subnav-link">Categorías <span class="caret">▾</span></span>
     <div class="dropdown-panel">
-      <a href="#catalogo" onclick="irACategoria('Vlogs')">Vlogs</a>
-      <a href="#catalogo" onclick="irACategoria('Música')">Música</a>
-      <a href="#catalogo" onclick="irACategoria('Gaming')">Gaming</a>
-      <a href="#catalogo" onclick="irACategoria('Comedia')">Comedia</a>
-      <a href="#catalogo" onclick="irACategoria('Tutoriales')">Tutoriales</a>
-      <a href="#catalogo" onclick="irACategoria('Tendencias')">Tendencias</a>
+      <a href="#" onclick="irACategoria('Vlogs');return false;">Vlogs</a>
+      <a href="#" onclick="irACategoria('Música');return false;">Música</a>
+      <a href="#" onclick="irACategoria('Gaming');return false;">Gaming</a>
+      <a href="#" onclick="irACategoria('Comedia');return false;">Comedia</a>
+      <a href="#" onclick="irACategoria('Tutoriales');return false;">Tutoriales</a>
+      <a href="#" onclick="irACategoria('Tendencias');return false;">Tendencias</a>
     </div>
   </div>
   <a href="#topPopulares" class="subnav-link">🔥 Top Populares</a>
@@ -625,12 +625,18 @@
 
 <div class="mobile-nav" id="mobileNav">
   <a href="#catalogo" onclick="closeMobileNav()">Explorar</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Vlogs');return false;">Vlogs</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Música');return false;">Música</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Gaming');return false;">Gaming</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Comedia');return false;">Comedia</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Tutoriales');return false;">Tutoriales</a>
+  <a href="#" onclick="closeMobileNav();irACategoria('Tendencias');return false;">Tendencias</a>
   <a href="#topPopulares" onclick="closeMobileNav()">Top Populares</a>
   <a href="#shorts" onclick="closeMobileNav()">Shorts</a>
   <a href="#" onclick="closeMobileNav();abrirSiguiendo();">Siguiendo</a>
   <a href="#" onclick="closeMobileNav();abrirDirectorioUsuarios();">Usuarios</a>
   <a href="#" onclick="closeMobileNav();abrirHistorial();">Historial</a>
-  <a href="#" onclick="closeMobileNav()">Acerca de</a>
+  <a href="#" onclick="closeMobileNav();openUpload();">Subir video</a>
 </div>
 
 
@@ -1875,6 +1881,8 @@
   let categoriaActiva = 'Todos';
 
   function irACategoria(categoria){
+    const buscador = document.getElementById('searchInput');
+    if (buscador) buscador.value = '';
     const chips = document.querySelectorAll('.filters .filter-chip');
     let chipObjetivo = null;
     chips.forEach(function(chip){
