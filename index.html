@@ -111,6 +111,7 @@
   .subnav{
     display:flex;gap:28px;padding:12px 6%;background:var(--bg-panel);
     border-bottom:1px solid var(--line);font-size:0.85rem;font-weight:600;
+    position:sticky;z-index:48;
   }
   .subnav-link{color:var(--ink-dim);cursor:pointer;display:flex;align-items:center;gap:4px;transition:color .15s;}
   .subnav-link:hover{color:var(--acid);}
@@ -1933,6 +1934,14 @@
     }
     cards.forEach(function(c){ grid.appendChild(c); });
   }
+
+  function ajustarPosicionSubnav(){
+    const nav = document.querySelector('nav');
+    const subnav = document.querySelector('.subnav');
+    if (nav && subnav) subnav.style.top = nav.offsetHeight + 'px';
+  }
+  ajustarPosicionSubnav();
+  window.addEventListener('resize', ajustarPosicionSubnav);
 
   function toggleMobileNav(){
     document.getElementById('mobileNav').classList.toggle('open');
