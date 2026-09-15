@@ -206,6 +206,20 @@
   .notif-time{font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-dim);display:block;margin-top:3px;}
 
   .verificado-badge{color:var(--cyan);margin-left:4px;}
+
+  .user-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;}
+  .user-card{
+    background:var(--bg-panel);border:1px solid var(--line);padding:20px 12px;
+    text-align:center;cursor:pointer;transition:transform .15s, border-color .15s;
+  }
+  .user-card:hover{transform:translateY(-3px);border-color:var(--line-bright);}
+  .user-card-avatar{
+    width:60px;height:60px;border-radius:50%;background:var(--violet);color:#08060F;
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+    font-size:1.4rem;font-weight:700;margin:0 auto 10px;background-size:cover;background-position:center;
+    text-transform:uppercase;
+  }
+  .user-card-name{font-size:0.88rem;font-weight:600;color:var(--ink);word-break:break-word;}
   @media (max-width:640px){ .profile-header{flex-wrap:wrap;} .profile-header .edit-btn{margin-left:auto;} }
 
   /* ---------- SHORTS ---------- */
@@ -604,6 +618,7 @@
   <a href="#topPopulares" class="subnav-link">🔥 Top Populares</a>
   <a href="#shorts" class="subnav-link">⚡ Shorts</a>
   <a href="#" class="subnav-link" onclick="abrirSiguiendo();return false;">👥 Siguiendo</a>
+  <a href="#" class="subnav-link" onclick="abrirDirectorioUsuarios();return false;">🔍 Usuarios</a>
   <a href="#" class="subnav-link" onclick="abrirHistorial();return false;">🕐 Historial</a>
   <a href="#" class="subnav-link" onclick="openUpload();return false;">Subir video</a>
 </div>
@@ -613,6 +628,7 @@
   <a href="#topPopulares" onclick="closeMobileNav()">Top Populares</a>
   <a href="#shorts" onclick="closeMobileNav()">Shorts</a>
   <a href="#" onclick="closeMobileNav();abrirSiguiendo();">Siguiendo</a>
+  <a href="#" onclick="closeMobileNav();abrirDirectorioUsuarios();">Usuarios</a>
   <a href="#" onclick="closeMobileNav();abrirHistorial();">Historial</a>
   <a href="#" onclick="closeMobileNav()">Acerca de</a>
 </div>
@@ -977,6 +993,7 @@
           <p id="profileBio" style="margin-top:6px;font-size:0.88rem;color:var(--ink-dim);"></p>
         </div>
         <button class="edit-btn" onclick="abrirEdicionPerfil()">Editar perfil</button>
+        <button class="edit-btn" id="btnSolicitarVerif" onclick="abrirSolicitudVerificacion()">✅ Pedir verificación</button>
       </div>
       <div class="profile-stats">
         <div class="stat-box"><span class="stat-num" id="statVideos">0</span><span class="stat-label">Videos</span></div>
@@ -993,6 +1010,24 @@
       <div class="grid" id="favoritosGrid"></div>
       <p class="top-empty" id="favoritosEmpty" style="display:none;">Todavía no guardaste ningún video.</p>
     </div>
+  </div>
+</div>
+
+<div class="video-modal" id="verifModal">
+  <div class="upload-modal-inner">
+    <div class="video-modal-head">
+      <span>PEDIR VERIFICACIÓN</span>
+      <button class="video-modal-close" onclick="closeSolicitudVerificacion()">✕</button>
+    </div>
+    <form class="upload-form" id="verifForm">
+      <h3>¿Por qué mereces la insignia ✅?</h3>
+      <span class="sub">El administrador revisa cada solicitud</span>
+      <div class="field">
+        <textarea id="verifMotivo" placeholder="Cuéntanos sobre tu canal, tus videos, etc." required></textarea>
+      </div>
+      <button type="submit" class="upload-submit">Enviar solicitud</button>
+      <p class="upload-note">Solo puedes tener una solicitud pendiente a la vez.</p>
+    </form>
   </div>
 </div>
 
@@ -1052,6 +1087,7 @@
       <div class="auth-tabs">
         <div class="auth-tab active" id="tabReportes" onclick="cambiarTabAdmin('reportes')">🚩 Reportes</div>
         <div class="auth-tab" id="tabUsuarios" onclick="cambiarTabAdmin('usuarios')">👥 Usuarios</div>
+        <div class="auth-tab" id="tabVerif" onclick="cambiarTabAdmin('verif')">✅ Verificación</div>
       </div>
 
       <div id="adminPanelReportes">
@@ -1062,6 +1098,11 @@
       <div id="adminPanelUsuarios" style="display:none;">
         <div id="usuariosList"></div>
         <p class="top-empty" id="usuariosEmpty" style="display:none;">Todavía no hay usuarios con perfil creado.</p>
+      </div>
+
+      <div id="adminPanelVerif" style="display:none;">
+        <div id="verifList"></div>
+        <p class="top-empty" id="verifEmpty" style="display:none;">No hay solicitudes pendientes.</p>
       </div>
 
     </div>
@@ -1103,6 +1144,25 @@
     <div style="padding:20px;">
       <div id="listaGenteContenido"></div>
       <p class="top-empty" id="listaGenteEmpty" style="display:none;"></p>
+    </div>
+  </div>
+</div>
+
+<div class="video-modal" id="usuariosModal">
+  <div class="video-modal-inner" style="max-width:900px;">
+    <div class="video-modal-head">
+      <span>🔍 EXPLORAR USUARIOS</span>
+      <button class="video-modal-close" onclick="closeUsuariosDir()">✕</button>
+    </div>
+    <div style="padding:20px 24px 0;">
+      <div class="search-box" style="max-width:none;margin-bottom:20px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Buscar por nombre de usuario..." oninput="filtrarDirectorioUsuarios(this.value)">
+      </div>
+    </div>
+    <div style="padding:0 24px 30px;">
+      <div class="user-card-grid" id="usuariosDirGrid"></div>
+      <p class="top-empty" id="usuariosDirEmpty" style="display:none;">No se encontró ningún usuario.</p>
     </div>
   </div>
 </div>
@@ -1513,9 +1573,12 @@
   function cambiarTabAdmin(tab){
     document.getElementById('tabReportes').classList.toggle('active', tab === 'reportes');
     document.getElementById('tabUsuarios').classList.toggle('active', tab === 'usuarios');
+    document.getElementById('tabVerif').classList.toggle('active', tab === 'verif');
     document.getElementById('adminPanelReportes').style.display = tab === 'reportes' ? 'block' : 'none';
     document.getElementById('adminPanelUsuarios').style.display = tab === 'usuarios' ? 'block' : 'none';
+    document.getElementById('adminPanelVerif').style.display = tab === 'verif' ? 'block' : 'none';
     if (tab === 'usuarios') cargarUsuariosAdmin();
+    if (tab === 'verif') cargarSolicitudesVerificacion();
   }
 
   function cargarEstadisticasAdmin(){
@@ -1618,6 +1681,74 @@
       cargarUsuariosAdmin();
     });
   }
+
+  function cargarSolicitudesVerificacion(){
+    const lista = document.getElementById('verifList');
+    const vacio = document.getElementById('verifEmpty');
+    lista.innerHTML = '<p class="top-empty">Cargando...</p>';
+
+    sb.from('solicitudes_verificacion').select('*, perfiles(username)').eq('estado', 'pendiente').order('created_at', { ascending: true })
+      .then(function({ data, error }){
+        if (error){ lista.innerHTML = ''; mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        if (!data || data.length === 0){
+          lista.innerHTML = '';
+          vacio.style.display = 'block';
+          return;
+        }
+        vacio.style.display = 'none';
+        lista.innerHTML = '';
+        data.forEach(function(s){
+          const nombre = s.perfiles ? s.perfiles.username : 'Usuario';
+          const item = document.createElement('div');
+          item.className = 'comment-item';
+          item.innerHTML = `
+            <div class="comment-body">
+              <span class="comment-author">${nombre || 'Usuario'}</span>
+              <span class="comment-text">${s.motivo}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              <button class="edit-btn" onclick="resolverSolicitudVerificacion('${s.id}', true)">Aprobar</button>
+              <button class="delete-btn" onclick="resolverSolicitudVerificacion('${s.id}', false)">Rechazar</button>
+            </div>
+          `;
+          lista.appendChild(item);
+        });
+      });
+  }
+
+  function resolverSolicitudVerificacion(solicitudId, aprobar){
+    sb.rpc('admin_resolver_verificacion', { target_id: solicitudId, aprobar: aprobar }).then(function({ error }){
+      if (error){ mostrarToast('Error: ' + error.message, 'error'); return; }
+      mostrarToast(aprobar ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
+      cargarSolicitudesVerificacion();
+    });
+  }
+
+  // ---------- SOLICITAR VERIFICACIÓN (usuario) ----------
+  function closeSolicitudVerificacion(){
+    document.getElementById('verifModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('verifModal').addEventListener('click', function(e){
+    if(e.target === this) closeSolicitudVerificacion();
+  });
+  function abrirSolicitudVerificacion(){
+    document.getElementById('verifMotivo').value = '';
+    document.getElementById('verifModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  document.getElementById('verifForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const motivo = document.getElementById('verifMotivo').value.trim();
+    if (!motivo || !currentUser) return;
+    sb.from('solicitudes_verificacion').insert([{ user_id: currentUser.id, motivo: motivo }])
+      .then(function({ error }){
+        if (error){ mostrarToast('No se pudo enviar: ' + error.message, 'error'); return; }
+        closeSolicitudVerificacion();
+        mostrarToast('¡Solicitud enviada! El admin la va a revisar.');
+      });
+  });
+
 
   function toggleDestacar(videoId, nuevoValor, btnEl){
     sb.rpc('admin_destacar_video', { target_id: videoId, valor: nuevoValor }).then(function({ error }){
@@ -2338,6 +2469,62 @@
       });
   }
 
+  // ---------- DIRECTORIO DE USUARIOS ----------
+  let directorioUsuariosData = [];
+
+  function closeUsuariosDir(){
+    document.getElementById('usuariosModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('usuariosModal').addEventListener('click', function(e){
+    if(e.target === this) closeUsuariosDir();
+  });
+
+  function abrirDirectorioUsuarios(){
+    document.getElementById('usuariosDirGrid').innerHTML = '<p class="top-empty">Cargando...</p>';
+    document.getElementById('usuariosDirEmpty').style.display = 'none';
+    document.getElementById('usuariosModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    sb.from('perfiles').select('*').order('updated_at', { ascending: false })
+      .then(function({ data, error }){
+        if (error){ mostrarToast('No se pudo cargar: ' + error.message, 'error'); return; }
+        directorioUsuariosData = data || [];
+        renderDirectorioUsuarios(directorioUsuariosData);
+      });
+  }
+
+  function renderDirectorioUsuarios(lista){
+    const grid = document.getElementById('usuariosDirGrid');
+    const vacio = document.getElementById('usuariosDirEmpty');
+    grid.innerHTML = '';
+    if (!lista || lista.length === 0){
+      vacio.style.display = 'block';
+      return;
+    }
+    vacio.style.display = 'none';
+    lista.forEach(function(p){
+      const card = document.createElement('div');
+      card.className = 'user-card';
+      card.onclick = function(){ closeUsuariosDir(); verPerfilPublico(p.user_id); };
+      const avatarStyle = p.avatar_url ? `background-image:url('${p.avatar_url}');` : '';
+      card.innerHTML = `
+        <div class="user-card-avatar" style="${avatarStyle}">${p.avatar_url ? '' : (p.username || 'U').charAt(0)}</div>
+        <div class="user-card-name">${p.username || 'Usuario de Bolíx'} ${p.verificado ? '<span class="verificado-badge">✅</span>' : ''}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function filtrarDirectorioUsuarios(texto){
+    texto = texto.trim().toLowerCase();
+    if (texto === ''){ renderDirectorioUsuarios(directorioUsuariosData); return; }
+    const filtrado = directorioUsuariosData.filter(function(p){
+      return (p.username || '').toLowerCase().includes(texto);
+    });
+    renderDirectorioUsuarios(filtrado);
+  }
+
   // ---------- FEED DE SIGUIENDO ----------
   function closeSiguiendo(){
     document.getElementById('siguiendoModal').classList.remove('open');
@@ -2725,7 +2912,7 @@
   });
 
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); closeListaGente(); closeNotificaciones(); closeHistorial(); }
+    if(e.key === 'Escape'){ closeVideo(); closeUpload(); closeProfile(); closeEditProfile(); closePublicProfile(); closeAdmin(); closeSiguiendo(); closeListaGente(); closeNotificaciones(); closeHistorial(); closeSolicitudVerificacion(); closeUsuariosDir(); }
   });
 </script>
 
