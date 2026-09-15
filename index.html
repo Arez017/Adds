@@ -2434,7 +2434,10 @@
   // ---------- HISTORIAL ----------
   function registrarHistorial(videoId){
     if (!currentUser || !videoId) return;
-    sb.from('historial').upsert({ user_id: currentUser.id, video_id: videoId, visto_en: new Date().toISOString() });
+    sb.from('historial').upsert({ user_id: currentUser.id, video_id: videoId, visto_en: new Date().toISOString() })
+      .then(function({ error }){
+        if (error) console.error('No se pudo registrar el historial:', error);
+      });
   }
 
   function closeHistorial(){
